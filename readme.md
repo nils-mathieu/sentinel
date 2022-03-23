@@ -61,14 +61,10 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
  - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`Slice<T, S>`] can be created on the stack by making it [`!Sized`].
 
-*`null` is part of the default features*
-
-## Todo
-
-- [ ] Figure whether it is safe to use the `Slice<T, S>` type without an extern type inside it. There might be some optimization in play for references to zero-sized types.
+*`null` is a default features*
 
 # Old `sentinel` crate
 
-The name `sentinel` was kindly given to me by the previous maintainder of [this](https://github.com/maidsafe-archive/sentinel) project.
+The name `sentinel` was kindly given to me by the previous maintainer of [this](https://github.com/maidsafe-archive/sentinel) project.
 
 Every pre-0.2 versions (on crates.io) contain the source code of that crate.

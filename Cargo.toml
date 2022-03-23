@@ -3,6 +3,13 @@ name = "sentinel"
 version = "0.2.0"
 edition = "2021"
 authors = ["Nils Mathieu <nils.mathieu.contact@gmail.com>"]
+description = "A sentinel-terminated slice library."
+license = "MIT OR Apache-2.0"
+keywords = ["slice", "cstr", "null"]
+categories = ["data-structures", "no-std", "development-tools::ffi"]
+repository = "https://github.com/nils-mathieu/sentinel"
+readme = "readme.md"
+documentation = "https://docs.rs/sentinel"
 
 [features]
 default = ["null"]
