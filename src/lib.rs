@@ -5,6 +5,8 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+use core::cmp::Ordering;
+use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::panic::{RefUnwindSafe, UnwindSafe};
@@ -346,6 +348,127 @@ impl<T: RefUnwindSafe, S: Sentinel<T>> RefUnwindSafe for SSlice<T, S> {}
 
 impl<T: Unpin, S: Sentinel<T>> Unpin for SSlice<T, S> {}
 
+impl<T1, S1, T2, S2> PartialEq<SSlice<T2, S2>> for SSlice<T1, S1>
+where
+    T1: PartialEq<T2>,
+    S1: Sentinel<T1>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T: Eq, S: Sentinel<T>> Eq for SSlice<T, S> {}
+
+impl<T1, S1, T2> PartialEq<[T2]> for SSlice<T1, S1>
+where
+    T1: PartialEq<T2>,
+    S1: Sentinel<T1>,
+{
+    #[inline]
+    fn eq(&self, other: &[T2]) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T1, T2, S2> PartialEq<SSlice<T2, S2>> for [T1]
+where
+    T1: PartialEq<T2>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T1, S1, T2, const N: usize> PartialEq<[T2; N]> for SSlice<T1, S1>
+where
+    T1: PartialEq<T2>,
+    S1: Sentinel<T1>,
+{
+    #[inline]
+    fn eq(&self, other: &[T2; N]) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T1, T2, S2, const N: usize> PartialEq<SSlice<T2, S2>> for [T1; N]
+where
+    T1: PartialEq<T2>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T1, S1, T2, S2> PartialOrd<SSlice<T2, S2>> for SSlice<T1, S1>
+where
+    T1: PartialOrd<T2>,
+    S1: Sentinel<T1>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T: Ord, S: Sentinel<T>> Ord for SSlice<T, S> {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<T1, S1, T2> PartialOrd<[T2]> for SSlice<T1, S1>
+where
+    T1: PartialOrd<T2>,
+    S1: Sentinel<T1>,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &[T2]) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T1, T2, S2> PartialOrd<SSlice<T2, S2>> for [T1]
+where
+    T1: PartialOrd<T2>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T1, S1, T2, const N: usize> PartialOrd<[T2; N]> for SSlice<T1, S1>
+where
+    T1: PartialOrd<T2>,
+    S1: Sentinel<T1>,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &[T2; N]) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T1, T2, S2, const N: usize> PartialOrd<SSlice<T2, S2>> for [T1; N]
+where
+    T1: PartialOrd<T2>,
+    S2: Sentinel<T2>,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
 impl<'a, T, S: Sentinel<T>> IntoIterator for &'a SSlice<T, S> {
     type IntoIter = &'a Iter<T, S>;
     type Item = &'a T;
@@ -363,5 +486,11 @@ impl<'a, T, S: Sentinel<T>> IntoIterator for &'a mut SSlice<T, S> {
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
+    }
+}
+
+impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entries(self.iter()).finish()
     }
 }

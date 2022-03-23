@@ -3,6 +3,7 @@ use core::alloc::{AllocError, Allocator};
 
 use core::alloc::Layout;
 use core::borrow::{Borrow, BorrowMut};
+use core::cmp::Ordering;
 use core::mem::{align_of, size_of, ManuallyDrop, MaybeUninit};
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
@@ -260,5 +261,123 @@ impl<'a, T> Drop for SliceGuard<'a, T> {
             );
             core::ptr::drop_in_place(to_drop)
         }
+    }
+}
+
+impl<T, S, U, A> PartialEq<U> for SBox<T, S, A>
+where
+    A: Allocator,
+    S: Sentinel<T>,
+    SSlice<T, S>: PartialEq<U>,
+{
+    #[inline(always)]
+    fn eq(&self, other: &U) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<T, S, T2, S2, A> PartialEq<SBox<T, S, A>> for SSlice<T2, S2>
+where
+    S: Sentinel<T>,
+    S2: Sentinel<T2>,
+    A: Allocator,
+    T2: PartialEq<T>,
+{
+    #[inline(always)]
+    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+        self == other.as_ref()
+    }
+}
+
+impl<T, S, T2, A> PartialEq<SBox<T, S, A>> for [T2]
+where
+    S: Sentinel<T>,
+    A: Allocator,
+    T2: PartialEq<T>,
+{
+    #[inline(always)]
+    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+        self == other.as_ref()
+    }
+}
+
+impl<T, S, T2, A, const N: usize> PartialEq<SBox<T, S, A>> for [T2; N]
+where
+    S: Sentinel<T>,
+    A: Allocator,
+    T2: PartialEq<T>,
+{
+    #[inline(always)]
+    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+        self == other.as_ref()
+    }
+}
+
+impl<T, S, A> Eq for SBox<T, S, A>
+where
+    A: Allocator,
+    S: Sentinel<T>,
+    T: Eq,
+{
+}
+
+impl<T, S, U, A> PartialOrd<U> for SBox<T, S, A>
+where
+    A: Allocator,
+    S: Sentinel<T>,
+    SSlice<T, S>: PartialOrd<U>,
+{
+    #[inline(always)]
+    fn partial_cmp(&self, other: &U) -> Option<Ordering> {
+        self.as_ref().partial_cmp(other)
+    }
+}
+
+impl<T, S, T2, S2, A> PartialOrd<SBox<T, S, A>> for SSlice<T2, S2>
+where
+    S: Sentinel<T>,
+    S2: Sentinel<T2>,
+    A: Allocator,
+    T2: PartialOrd<T>,
+{
+    #[inline(always)]
+    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+        self.partial_cmp(other.as_ref())
+    }
+}
+
+impl<T, S, T2, A> PartialOrd<SBox<T, S, A>> for [T2]
+where
+    S: Sentinel<T>,
+    A: Allocator,
+    T2: PartialOrd<T>,
+{
+    #[inline(always)]
+    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+        self.partial_cmp(other.as_ref())
+    }
+}
+
+impl<T, S, T2, A, const N: usize> PartialOrd<SBox<T, S, A>> for [T2; N]
+where
+    S: Sentinel<T>,
+    A: Allocator,
+    T2: PartialOrd<T>,
+{
+    #[inline(always)]
+    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+        self.partial_cmp(other.as_ref())
+    }
+}
+
+impl<T, S, A> Ord for SBox<T, S, A>
+where
+    A: Allocator,
+    S: Sentinel<T>,
+    T: Ord,
+{
+    #[inline(always)]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.as_ref().cmp(other.as_ref())
     }
 }

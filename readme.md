@@ -57,7 +57,7 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
 ## Features
 
- - `alloc` - adds support for the `alloc` crate.
+ - `alloc` - adds support for the `alloc` crate. This adds the [`SBox<T, S>`] type.
 
  - `null` - this feature enables the [`Null`] type, which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
 
