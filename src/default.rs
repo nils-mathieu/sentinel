@@ -27,6 +27,33 @@ unsafe impl Sentinel<i8> for Default {
     }
 }
 
+unsafe impl Sentinel<bool> for Default {
+    #[inline(always)]
+    fn is_sentinel(value: &bool) -> bool {
+        !*value
+    }
+
+    #[inline(always)]
+    fn find_sentinel(slice: &[bool]) -> Option<usize> {
+        unsafe { memchr::memchr(0, &*(slice as *const [bool] as *const [u8])) }
+    }
+}
+
+macro_rules! impl_Sentinel_zero {
+    ($($t:ty),* $(,)?) => {
+        $(
+            unsafe impl Sentinel<$t> for Default {
+                #[inline(always)]
+                fn is_sentinel(value: &$t) -> bool {
+                    *value == 0
+                }
+            }
+        )*
+    };
+}
+
+impl_Sentinel_zero!(u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
+
 unsafe impl<T: ?Sized> Sentinel<*const T> for Default {
     #[inline(always)]
     fn is_sentinel(value: &*const T) -> bool {
