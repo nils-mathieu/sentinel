@@ -7,8 +7,8 @@ authors = ["Nils Mathieu <nils.mathieu.contact@gmail.com>"]
 [features]
 default = ["null"]
 
-# Adds the `Null` type, which implements the `Sentinel` trait for every common type.
 null = ["memchr"]
+nightly = []
 
 [dependencies]
 memchr = { version = "2", optional = true }

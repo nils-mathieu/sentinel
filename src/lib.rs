@@ -1,6 +1,5 @@
 #![no_std]
-#![feature(extern_types)]
-#![feature(const_mut_refs)]
+#![cfg_attr(feature = "nightly", feature(extern_types))]
 
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
@@ -24,6 +23,7 @@ pub use self::iter::*;
 
 mod index;
 
+#[cfg(feature = "nightly")]
 extern "C" {
     type SliceContent;
 }
@@ -39,6 +39,7 @@ pub struct Slice<
     _content: PhantomData<[T]>,
     _sentinel: PhantomData<fn() -> S>,
     /// Makes that `Slice<T>` is `!Sized` and cannot be created on the stack.
+    #[cfg(feature = "nightly")]
     _size: SliceContent,
 }
 
@@ -66,7 +67,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
     ///
     /// This invalid must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
-    pub const unsafe fn from_mut_ptr<'a>(ptr: *mut T) -> &'a mut Self {
+    pub unsafe fn from_mut_ptr<'a>(ptr: *mut T) -> &'a mut Self {
         &mut *(ptr as *mut Self)
     }
 
@@ -154,7 +155,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
 
     /// Returns a pointer to the first element that is part of the slice.
     #[inline(always)]
-    pub const fn as_mut_ptr(&mut self) -> *mut T {
+    pub fn as_mut_ptr(&mut self) -> *mut T {
         self as *mut Self as *mut T
     }
 

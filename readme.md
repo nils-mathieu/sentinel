@@ -1,6 +1,6 @@
 # Sentinel
 
-`sentinel` is a sentinel-terminated slice library. It makes use of the [`extern_types`] unstable feature to define a slice type that has the size of a single `usize`.
+`sentinel` is a sentinel-terminated slice library.
 
 ## How it works
 
@@ -59,7 +59,13 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
  - `null` - this feature enables the [`Null`] type, which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
 
+ - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`Slice<T, S>`] can be created on the stack by making it [`!Sized`].
+
 *`null` is part of the default features*
+
+## Todo
+
+- [ ] Figure whether it is safe to use the `Slice<T, S>` type without an extern type inside it. There might be some optimization in play for references to zero-sized types.
 
 # Old `sentinel` crate
 
