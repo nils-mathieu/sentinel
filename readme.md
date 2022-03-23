@@ -53,7 +53,7 @@ pub struct SSlice<T, S: Sentinel<T>> {
 
 Note that this type actually contains no data. Only references to this type can be created (i.e. `&SSlice<T, S>` or `&mut SSlice<T, S>`), and those references have the size a single `usize`.
 
-Because of this, we can define a `CStr` type, which is -unlike the standard library's- FFI-safe and matches the C-definition of a C-like `char *` string.
+Because of this, we can define a [`CStr`] type, which is -unlike the standard library's- FFI-safe and matches the C-definition of a C-like `char *` string.
 
 ## Features
 
@@ -63,10 +63,17 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
  - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`].
 
-*`null` is a default features*
+*`null` and `alloc` are enabled by default.*
 
 # Old `sentinel` crate
 
 The name `sentinel` was kindly given to me by the previous maintainer of [this](https://github.com/maidsafe-archive/sentinel) project.
 
 Every pre-0.2 versions (on crates.io) contain the source code of that crate.
+ 
+[`Sentinel`]: https://docs.rs/sentinel/0.2.0/sentinel/trait.Sentinel.html
+[`!Sized`]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
+[`Null`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.Null.html
+[`SBox<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SBox.html
+[`SSlice<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SSlice.html
+[`CStr`]: https://docs.rs/sentinel/0.2.0/sentinel/type.CStr.html
