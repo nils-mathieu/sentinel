@@ -29,6 +29,7 @@ extern "C" {
 }
 
 /// A sentinel-terminated slice.
+#[repr(transparent)]
 pub struct Slice<T, S: Sentinel<T>> {
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
