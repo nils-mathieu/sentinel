@@ -16,6 +16,7 @@ use alloc::alloc::Global;
 #[cfg(not(feature = "nightly"))]
 mod __allocator_replacement {
     use core::alloc::Layout;
+    use core::fmt;
     use core::ptr::NonNull;
 
     pub trait Allocator {
@@ -45,7 +46,14 @@ mod __allocator_replacement {
         }
     }
 
+    #[derive(Copy, Clone, PartialEq, Eq, Debug)]
     pub struct AllocError;
+
+    impl fmt::Display for AllocError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("memory allocation failed")
+        }
+    }
 }
 
 #[cfg(not(feature = "nightly"))]
@@ -175,6 +183,17 @@ impl<T, S: Sentinel<T>, A: Allocator> Drop for SBox<T, S, A> {
         let _guard = DropGuard { b: self };
 
         unsafe { core::ptr::drop_in_place(to_drop) }
+    }
+}
+
+impl<T, S, A> Clone for SBox<T, S, A>
+where
+    T: Clone,
+    S: Sentinel<T>,
+    A: Allocator + Clone,
+{
+    fn clone(&self) -> Self {
+        Self::from_sslice_in(self, self.allocator.clone()).unwrap()
     }
 }
 
