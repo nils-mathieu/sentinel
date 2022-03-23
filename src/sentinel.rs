@@ -24,7 +24,7 @@ pub unsafe trait Sentinel<T> {
     /// element up to (and including) the sentinel, must be initialized and valid for reads.
     unsafe fn find_sentinel_infinite(start: *const T) -> usize {
         let mut cur = start;
-        while Self::is_sentinel(&*cur) {
+        while !Self::is_sentinel(&*cur) {
             cur = cur.add(1);
         }
         cur as usize - start as usize

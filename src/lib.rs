@@ -214,9 +214,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 
     /// Returns whether the slice is currently empty.
-    #[inline]
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        unsafe { S::is_sentinel(&*self.as_ptr()) }
     }
 
     /// Returns the first element of the slice, or [`None`] if it is empty.
@@ -493,4 +493,118 @@ impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice() {
+    let mut slice = *b"hello\0test";
+
+    let s = SSlice::<u8>::from_slice(&slice).unwrap();
+    assert_eq!(s, b"hello");
+
+    let s = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
+    assert_eq!(s, b"hello");
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_none() {
+    let mut slice = *b"hello";
+
+    assert!(SSlice::<u8>::from_slice(&slice).is_none());
+    assert!(SSlice::<u8>::from_slice_mut(&mut slice).is_none());
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_split_middle() {
+    let mut slice = *b"abc\0def";
+
+    let (s, r) = SSlice::<u8>::from_slice_split(&slice).unwrap();
+    assert_eq!(s, b"abc");
+    assert_eq!(r, b"def");
+
+    let (s, r) = SSlice::<u8>::from_slice_split_mut(&mut slice).unwrap();
+    assert_eq!(s, b"abc");
+    assert_eq!(r, b"def");
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_split_start() {
+    let mut slice = *b"\0abcdef";
+
+    let (s, r) = SSlice::<u8>::from_slice_split(&slice).unwrap();
+    assert_eq!(s, b"");
+    assert_eq!(r, b"abcdef");
+
+    let (s, r) = SSlice::<u8>::from_slice_split_mut(&mut slice).unwrap();
+    assert_eq!(s, b"");
+    assert_eq!(r, b"abcdef");
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_split_end() {
+    let mut slice = *b"abcdef\0";
+
+    let (s, r) = SSlice::<u8>::from_slice_split(&slice).unwrap();
+    assert_eq!(s, b"abcdef");
+    assert_eq!(r, b"");
+
+    let (s, r) = SSlice::<u8>::from_slice_split_mut(&mut slice).unwrap();
+    assert_eq!(s, b"abcdef");
+    assert_eq!(r, b"");
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_split_none() {
+    let mut slice = *b"abcdef";
+
+    assert!(SSlice::<u8>::from_slice_split(&slice).is_none());
+    assert!(SSlice::<u8>::from_slice_split_mut(&mut slice).is_none());
+}
+
+#[cfg(test)]
+#[test]
+fn len() {
+    let s = SSlice::<u8>::from_slice(b"Hello\0").unwrap();
+    assert_eq!(s.len(), 5);
+    assert!(!s.is_empty());
+
+    let s = SSlice::<u8>::from_slice(b"\0").unwrap();
+    assert_eq!(s.len(), 0);
+    assert!(s.is_empty());
+}
+
+#[cfg(test)]
+#[test]
+fn split_first() {
+    let mut slice = *b"hello\0";
+
+    let s = SSlice::<u8>::from_slice(&slice).unwrap();
+    let (a, r) = s.split_first().unwrap();
+    assert_eq!(a, &b'h');
+    assert_eq!(r, b"ello");
+
+    let s = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
+    let (a, r) = s.split_first().unwrap();
+    assert_eq!(a, &b'h');
+    assert_eq!(r, b"ello");
+}
+
+#[cfg(test)]
+#[test]
+fn as_slice() {
+    let mut slice = *b"hello\0";
+
+    let s = SSlice::<u8>::from_slice(&slice).unwrap();
+    let sl = s.as_slice();
+    assert_eq!(sl, b"hello");
+
+    let s = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
+    let sl = s.as_slice_mut();
+    assert_eq!(sl, b"hello");
 }
