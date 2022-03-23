@@ -1,13 +1,13 @@
 use core::fmt;
 use core::fmt::Write;
 
-use crate::Default;
+use crate::Null;
 
 /// A null-terminated C-like string.
 ///
 /// Unlike the standard library's `CStr`, a reference to this type has the size of a single pointer
 /// (rather than two).
-pub type CStr = crate::Slice<i8, Default>;
+pub type CStr = crate::Slice<i8, Null>;
 
 impl CStr {
     /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.

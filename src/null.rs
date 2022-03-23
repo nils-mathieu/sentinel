@@ -1,9 +1,9 @@
 use crate::Sentinel;
 
 /// A [`Sentinel`] implementation that is used as a default for every common type.
-pub struct Default;
+pub struct Null;
 
-unsafe impl Sentinel<u8> for Default {
+unsafe impl Sentinel<u8> for Null {
     #[inline(always)]
     fn is_sentinel(value: &u8) -> bool {
         *value == 0
@@ -15,7 +15,7 @@ unsafe impl Sentinel<u8> for Default {
     }
 }
 
-unsafe impl Sentinel<i8> for Default {
+unsafe impl Sentinel<i8> for Null {
     #[inline(always)]
     fn is_sentinel(value: &i8) -> bool {
         *value == 0
@@ -27,7 +27,7 @@ unsafe impl Sentinel<i8> for Default {
     }
 }
 
-unsafe impl Sentinel<bool> for Default {
+unsafe impl Sentinel<bool> for Null {
     #[inline(always)]
     fn is_sentinel(value: &bool) -> bool {
         !*value
@@ -42,7 +42,7 @@ unsafe impl Sentinel<bool> for Default {
 macro_rules! impl_Sentinel_zero {
     ($($t:ty),* $(,)?) => {
         $(
-            unsafe impl Sentinel<$t> for Default {
+            unsafe impl Sentinel<$t> for Null {
                 #[inline(always)]
                 fn is_sentinel(value: &$t) -> bool {
                     *value == 0
@@ -54,21 +54,21 @@ macro_rules! impl_Sentinel_zero {
 
 impl_Sentinel_zero!(u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
 
-unsafe impl<T: ?Sized> Sentinel<*const T> for Default {
+unsafe impl<T: ?Sized> Sentinel<*const T> for Null {
     #[inline(always)]
     fn is_sentinel(value: &*const T) -> bool {
         value.is_null()
     }
 }
 
-unsafe impl<T: ?Sized> Sentinel<*mut T> for Default {
+unsafe impl<T: ?Sized> Sentinel<*mut T> for Null {
     #[inline(always)]
     fn is_sentinel(value: &*mut T) -> bool {
         value.is_null()
     }
 }
 
-unsafe impl<T> Sentinel<Option<T>> for Default {
+unsafe impl<T> Sentinel<Option<T>> for Null {
     #[inline(always)]
     fn is_sentinel(value: &Option<T>) -> bool {
         value.is_none()

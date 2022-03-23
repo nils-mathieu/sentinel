@@ -5,13 +5,10 @@ edition = "2021"
 authors = ["Nils Mathieu <nils.mathieu.contact@gmail.com>"]
 
 [features]
-default = ["default_impl", "cstr"]
+default = ["null"]
 
-# Adds the `Default` type, which implements the `Sentinel` trait for every common type.
-default_impl = ["memchr"]
-
-# Adds the `CStr` type.
-cstr = ["default_impl"]
+# Adds the `Null` type, which implements the `Sentinel` trait for every common type.
+null = ["memchr"]
 
 [dependencies]
 memchr = { version = "2", optional = true }

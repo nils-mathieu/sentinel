@@ -9,14 +9,14 @@ use core::panic::{RefUnwindSafe, UnwindSafe};
 mod sentinel;
 pub use self::sentinel::*;
 
-#[cfg(feature = "default_impl")]
-mod default;
-#[cfg(feature = "default_impl")]
-pub use self::default::*;
+#[cfg(feature = "null")]
+mod null;
+#[cfg(feature = "null")]
+pub use self::null::*;
 
-#[cfg(feature = "cstr")]
+#[cfg(feature = "null")]
 mod cstr;
-#[cfg(feature = "cstr")]
+#[cfg(feature = "null")]
 pub use self::cstr::*;
 
 mod iter;
@@ -30,7 +30,11 @@ extern "C" {
 
 /// A sentinel-terminated slice.
 #[repr(transparent)]
-pub struct Slice<T, S: Sentinel<T>> {
+pub struct Slice<
+    T,
+    #[cfg(feature = "null")] S: Sentinel<T> = Null,
+    #[cfg(not(feature = "null"))] S: Sentinel<T>,
+> {
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
     _sentinel: PhantomData<fn() -> S>,
