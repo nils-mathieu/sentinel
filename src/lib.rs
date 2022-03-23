@@ -20,6 +20,8 @@ pub use self::cstr::*;
 mod iter;
 pub use self::iter::*;
 
+mod index;
+
 extern "C" {
     type SliceContent;
 }
@@ -83,6 +85,32 @@ impl<T, S> Slice<T, S> {
     #[inline(always)]
     pub fn iter_mut(&mut self) -> &mut Iter<T, S> {
         Iter::new_mut(self)
+    }
+
+    /// Indexes into this [`Slice<T, S>`] instance without checking the bounds.
+    ///
+    /// ## Safety
+    ///
+    /// `index` must be in bounds.
+    #[inline(always)]
+    pub unsafe fn get_unchecked<Idx>(&self, index: Idx) -> &Idx::Output
+    where
+        Idx: self::index::SliceIndex<T, S>,
+    {
+        index.index_unchecked(self)
+    }
+
+    /// Indexes into this [`Slice<T, S>`] instance without checking the bounds.
+    ///
+    /// ## Safety
+    ///
+    /// `index` must be in bounds.
+    #[inline(always)]
+    pub unsafe fn get_unchecked_mut<Idx>(&mut self, index: Idx) -> &mut Idx::Output
+    where
+        Idx: self::index::SliceIndex<T, S>,
+    {
+        index.index_unchecked_mut(self)
     }
 }
 
