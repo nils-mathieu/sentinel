@@ -57,6 +57,8 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
 ## Features
 
+ - `alloc` - adds support for the `alloc` crate.
+
  - `null` - this feature enables the [`Null`] type, which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
 
  - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`].

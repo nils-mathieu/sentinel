@@ -1,5 +1,9 @@
 #![no_std]
 #![cfg_attr(feature = "nightly", feature(extern_types))]
+#![cfg_attr(feature = "nightly", feature(allocator_api))]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
@@ -20,6 +24,11 @@ pub use self::cstr::*;
 
 mod iter;
 pub use self::iter::*;
+
+#[cfg(any(feature = "nightly", feature = "alloc"))]
+mod sbox;
+#[cfg(any(feature = "nightly", feature = "alloc"))]
+pub use self::sbox::*;
 
 mod index;
 
