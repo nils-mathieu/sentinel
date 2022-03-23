@@ -1,17 +1,17 @@
-use crate::{Sentinel, Slice};
+use crate::{SSlice, Sentinel};
 
-/// An iterator over the elements of a [`Slice<T, S>`].
-pub struct Iter<T, S: Sentinel<T>>(Slice<T, S>);
+/// An iterator over the elements of a [`SSlice<T, S>`].
+pub struct Iter<T, S: Sentinel<T>>(SSlice<T, S>);
 
 impl<T, S: Sentinel<T>> Iter<T, S> {
     #[inline(always)]
-    pub(crate) fn new_ref(slice: &Slice<T, S>) -> &Self {
-        unsafe { &*(slice as *const Slice<T, S> as *const Self) }
+    pub(crate) fn new_ref(slice: &SSlice<T, S>) -> &Self {
+        unsafe { &*(slice as *const SSlice<T, S> as *const Self) }
     }
 
     #[inline(always)]
-    pub(crate) fn new_mut(slice: &mut Slice<T, S>) -> &mut Self {
-        unsafe { &mut *(slice as *mut Slice<T, S> as *mut Self) }
+    pub(crate) fn new_mut(slice: &mut SSlice<T, S>) -> &mut Self {
+        unsafe { &mut *(slice as *mut SSlice<T, S> as *mut Self) }
     }
 }
 
@@ -60,7 +60,7 @@ impl<'a, T, S: Sentinel<T>> Iterator for &'a mut Iter<T, S> {
                 None
             } else {
                 let first = &mut *self.0.as_mut_ptr();
-                *self = Iter::new_mut(Slice::from_mut_ptr(self.0.as_mut_ptr().add(1)));
+                *self = Iter::new_mut(SSlice::from_mut_ptr(self.0.as_mut_ptr().add(1)));
                 Some(first)
             }
         }

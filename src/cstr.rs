@@ -7,7 +7,7 @@ use crate::Null;
 ///
 /// Unlike the standard library's `CStr`, a reference to this type has the size of a single pointer
 /// (rather than two).
-pub type CStr = crate::Slice<i8, Null>;
+pub type CStr = crate::SSlice<i8, Null>;
 
 impl CStr {
     /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.

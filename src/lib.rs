@@ -30,7 +30,7 @@ extern "C" {
 
 /// A sentinel-terminated slice.
 #[repr(transparent)]
-pub struct Slice<
+pub struct SSlice<
     T,
     #[cfg(feature = "null")] S: Sentinel<T> = Null,
     #[cfg(not(feature = "null"))] S: Sentinel<T>,
@@ -38,13 +38,13 @@ pub struct Slice<
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
     _sentinel: PhantomData<fn() -> S>,
-    /// Makes that `Slice<T>` is `!Sized` and cannot be created on the stack.
+    /// Makes that `SSlice<T>` is `!Sized` and cannot be created on the stack.
     #[cfg(feature = "nightly")]
     _size: SliceContent,
 }
 
-impl<T, S: Sentinel<T>> Slice<T, S> {
-    /// Creates a new [`Slice<T>`] instance from the provided pointer.
+impl<T, S: Sentinel<T>> SSlice<T, S> {
+    /// Creates a new [`SSlice<T>`] instance from the provided pointer.
     ///
     /// ## Safety
     ///
@@ -57,7 +57,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         &*(ptr as *const Self)
     }
 
-    /// Creates a new [`Slice<T>`] instance from the provided pointer.
+    /// Creates a new [`SSlice<T>`] instance from the provided pointer.
     ///
     /// ## Safety
     ///
@@ -71,9 +71,9 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         &mut *(ptr as *mut Self)
     }
 
-    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    /// Creates a [`SSlice<T, S>`] instance from the provided slice.
     ///
-    /// If the slice contains a sentinel character, the function retuns a [`Slice<T, S>`]
+    /// If the slice contains a sentinel character, the function retuns a [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. The remaining of the slice is returned as well.
     ///
@@ -95,9 +95,9 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         }
     }
 
-    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    /// Creates a [`SSlice<T, S>`] instance from the provided slice.
     ///
-    /// If the slice contains a sentinel character, the function returns [`Slice<T, S>`]
+    /// If the slice contains a sentinel character, the function returns [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. Otherwise, the function returns [`None`].
     #[inline]
@@ -109,9 +109,9 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         }
     }
 
-    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    /// Creates a [`SSlice<T, S>`] instance from the provided slice.
     ///
-    /// If the slice contains a sentinel character, the function retuns a [`Slice<T, S>`]
+    /// If the slice contains a sentinel character, the function retuns a [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. The remaining of the slice is returned as well.
     ///
@@ -133,9 +133,9 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         }
     }
 
-    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    /// Creates a [`SSlice<T, S>`] instance from the provided slice.
     ///
-    /// If the slice contains a sentinel character, the function returns [`Slice<T, S>`]
+    /// If the slice contains a sentinel character, the function returns [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. Otherwise, the function returns [`None`].
     #[inline]
@@ -171,7 +171,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         Iter::new_mut(self)
     }
 
-    /// Indexes into this [`Slice<T, S>`] instance without checking the bounds.
+    /// Indexes into this [`SSlice<T, S>`] instance without checking the bounds.
     ///
     /// ## Safety
     ///
@@ -184,7 +184,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         index.index_unchecked(self)
     }
 
-    /// Indexes into this [`Slice<T, S>`] instance without checking the bounds.
+    /// Indexes into this [`SSlice<T, S>`] instance without checking the bounds.
     ///
     /// ## Safety
     ///
@@ -197,12 +197,12 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         index.index_unchecked_mut(self)
     }
 
-    /// Returns the length of the [`Slice<T, S>`]. This is the number of elements referenced by
+    /// Returns the length of the [`SSlice<T, S>`]. This is the number of elements referenced by
     /// that instance, not including the terminating sentinel character.
     #[inline(always)]
     pub fn len(&self) -> usize {
         // Safety:
-        //  This is safe by invariant of `Slice<T, S>`.
+        //  This is safe by invariant of `SSlice<T, S>`.
         unsafe { S::find_sentinel_infinite(self.as_ptr()) }
     }
 
@@ -243,7 +243,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
             if S::is_sentinel(&*self.as_ptr()) {
                 None
             } else {
-                Some((&*self.as_ptr(), Slice::from_ptr(self.as_ptr().add(1))))
+                Some((&*self.as_ptr(), SSlice::from_ptr(self.as_ptr().add(1))))
             }
         }
     }
@@ -257,7 +257,7 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
             } else {
                 Some((
                     &mut *self.as_mut_ptr(),
-                    Slice::from_mut_ptr(self.as_mut_ptr().add(1)),
+                    SSlice::from_mut_ptr(self.as_mut_ptr().add(1)),
                 ))
             }
         }
@@ -287,14 +287,14 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         &mut *self.as_mut_ptr()
     }
 
-    /// Returns a slice referencing every element of this [`Slice<T, S>`].
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`].
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         let len = self.len();
         unsafe { core::slice::from_raw_parts(self.as_ptr(), len) }
     }
 
-    /// Returns a slice referencing every element of this [`Slice<T, S>`].
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`].
     #[inline]
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         let len = self.len();
@@ -302,14 +302,14 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
     }
 }
 
-impl<T: Hash, S: Sentinel<T>> Hash for Slice<T, S> {
+impl<T: Hash, S: Sentinel<T>> Hash for SSlice<T, S> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.iter().for_each(|x| x.hash(state));
     }
 }
 
-impl<T, S: Sentinel<T>> Drop for Slice<T, S> {
+impl<T, S: Sentinel<T>> Drop for SSlice<T, S> {
     fn drop(&mut self) {
         struct Guard<'a, T, S: Sentinel<T>>(&'a mut Iter<T, S>);
 
@@ -333,15 +333,15 @@ impl<T, S: Sentinel<T>> Drop for Slice<T, S> {
     }
 }
 
-unsafe impl<T: Sync, S: Sentinel<T>> Sync for Slice<T, S> {}
-unsafe impl<T: Send, S: Sentinel<T>> Send for Slice<T, S> {}
+unsafe impl<T: Sync, S: Sentinel<T>> Sync for SSlice<T, S> {}
+unsafe impl<T: Send, S: Sentinel<T>> Send for SSlice<T, S> {}
 
-impl<T: UnwindSafe, S: Sentinel<T>> UnwindSafe for Slice<T, S> {}
-impl<T: RefUnwindSafe, S: Sentinel<T>> RefUnwindSafe for Slice<T, S> {}
+impl<T: UnwindSafe, S: Sentinel<T>> UnwindSafe for SSlice<T, S> {}
+impl<T: RefUnwindSafe, S: Sentinel<T>> RefUnwindSafe for SSlice<T, S> {}
 
-impl<T: Unpin, S: Sentinel<T>> Unpin for Slice<T, S> {}
+impl<T: Unpin, S: Sentinel<T>> Unpin for SSlice<T, S> {}
 
-impl<'a, T, S: Sentinel<T>> IntoIterator for &'a Slice<T, S> {
+impl<'a, T, S: Sentinel<T>> IntoIterator for &'a SSlice<T, S> {
     type IntoIter = &'a Iter<T, S>;
     type Item = &'a T;
 
@@ -351,7 +351,7 @@ impl<'a, T, S: Sentinel<T>> IntoIterator for &'a Slice<T, S> {
     }
 }
 
-impl<'a, T, S: Sentinel<T>> IntoIterator for &'a mut Slice<T, S> {
+impl<'a, T, S: Sentinel<T>> IntoIterator for &'a mut SSlice<T, S> {
     type IntoIter = &'a mut Iter<T, S>;
     type Item = &'a mut T;
 

@@ -41,17 +41,17 @@ pub trait Sentinel<T> {
 
 It is used to determine whether a specific instance of `T` should be treated as a "sentinel" value.
 
-### Slice
+### SSlice
 
-Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`Slice<T, S>`] type. It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining which instances of `T` should be considered sentinel values.
+Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`SSlice<T, S>`] type. It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining which instances of `T` should be considered sentinel values.
 
 ```Rust
-pub struct Slice<T, S: Sentinel<T>> {
+pub struct SSlice<T, S: Sentinel<T>> {
     _marker: PhantomData<(T, S)>,
 }
 ```
 
-Note that this type actually contains no data. Only references to this type can be created (i.e. `&Slice<T, S>` or `&mut Slice<T, S>`), and those references have the size a single `usize`.
+Note that this type actually contains no data. Only references to this type can be created (i.e. `&SSlice<T, S>` or `&mut SSlice<T, S>`), and those references have the size a single `usize`.
 
 Because of this, we can define a `CStr` type, which is -unlike the standard library's- FFI-safe and matches the C-definition of a C-like `char *` string.
 
@@ -59,7 +59,7 @@ Because of this, we can define a `CStr` type, which is -unlike the standard libr
 
  - `null` - this feature enables the [`Null`] type, which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
 
- - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`Slice<T, S>`] can be created on the stack by making it [`!Sized`].
+ - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`].
 
 *`null` is a default features*
 
