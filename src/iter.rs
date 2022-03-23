@@ -1,9 +1,9 @@
 use crate::{Sentinel, Slice};
 
 /// An iterator over the elements of a [`Slice<T, S>`].
-pub struct Iter<T, S>(Slice<T, S>);
+pub struct Iter<T, S: Sentinel<T>>(Slice<T, S>);
 
-impl<T, S> Iter<T, S> {
+impl<T, S: Sentinel<T>> Iter<T, S> {
     #[inline(always)]
     pub(crate) fn new_ref(slice: &Slice<T, S>) -> &Self {
         unsafe { &*(slice as *const Slice<T, S> as *const Self) }

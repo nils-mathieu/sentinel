@@ -2,7 +2,9 @@
 #![feature(extern_types)]
 #![feature(const_mut_refs)]
 
+use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
+use core::panic::{RefUnwindSafe, UnwindSafe};
 
 mod sentinel;
 pub use self::sentinel::*;
@@ -27,7 +29,7 @@ extern "C" {
 }
 
 /// A sentinel-terminated slice.
-pub struct Slice<T, S> {
+pub struct Slice<T, S: Sentinel<T>> {
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
     _sentinel: PhantomData<fn() -> S>,
@@ -35,7 +37,7 @@ pub struct Slice<T, S> {
     _size: SliceContent,
 }
 
-impl<T, S> Slice<T, S> {
+impl<T, S: Sentinel<T>> Slice<T, S> {
     /// Creates a new [`Slice<T>`] instance from the provided pointer.
     ///
     /// ## Safety
@@ -112,9 +114,7 @@ impl<T, S> Slice<T, S> {
     {
         index.index_unchecked_mut(self)
     }
-}
 
-impl<T, S: Sentinel<T>> Slice<T, S> {
     /// Returns the length of the [`Slice<T, S>`]. This is the number of elements referenced by
     /// that instance, not including the terminating sentinel character.
     #[inline(always)]
@@ -181,6 +181,45 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         }
     }
 }
+
+impl<T: Hash, S: Sentinel<T>> Hash for Slice<T, S> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.iter().for_each(|x| x.hash(state));
+    }
+}
+
+impl<T, S: Sentinel<T>> Drop for Slice<T, S> {
+    fn drop(&mut self) {
+        struct Guard<'a, T, S: Sentinel<T>>(&'a mut Iter<T, S>);
+
+        impl<'a, T, S: Sentinel<T>> Guard<'a, T, S> {
+            pub fn drop_content(&mut self) {
+                for elem in &mut self.0 {
+                    unsafe { core::ptr::drop_in_place(elem) };
+                }
+            }
+        }
+
+        impl<'a, T, S: Sentinel<T>> Drop for Guard<'a, T, S> {
+            fn drop(&mut self) {
+                self.drop_content();
+            }
+        }
+
+        let mut guard = Guard(self.iter_mut());
+        guard.drop_content();
+        core::mem::forget(guard);
+    }
+}
+
+unsafe impl<T: Sync, S: Sentinel<T>> Sync for Slice<T, S> {}
+unsafe impl<T: Send, S: Sentinel<T>> Send for Slice<T, S> {}
+
+impl<T: UnwindSafe, S: Sentinel<T>> UnwindSafe for Slice<T, S> {}
+impl<T: RefUnwindSafe, S: Sentinel<T>> RefUnwindSafe for Slice<T, S> {}
+
+impl<T: Unpin, S: Sentinel<T>> Unpin for Slice<T, S> {}
 
 impl<'a, T, S: Sentinel<T>> IntoIterator for &'a Slice<T, S> {
     type IntoIter = &'a Iter<T, S>;

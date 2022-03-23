@@ -1,9 +1,9 @@
 use core::ops::{Range, RangeTo, RangeToInclusive};
 
-use crate::Slice;
+use crate::{Sentinel, Slice};
 
 /// Describes how to index into a `Slice<T, S>`.
-pub trait SliceIndex<T, S> {
+pub trait SliceIndex<T, S: Sentinel<T>> {
     /// The output of the index operation.
     type Output: ?Sized;
 
@@ -22,7 +22,7 @@ pub trait SliceIndex<T, S> {
     unsafe fn index_unchecked_mut(self, slice: &mut Slice<T, S>) -> &mut Self::Output;
 }
 
-impl<T, S> SliceIndex<T, S> for usize {
+impl<T, S: Sentinel<T>> SliceIndex<T, S> for usize {
     type Output = T;
 
     #[inline(always)]
@@ -36,7 +36,7 @@ impl<T, S> SliceIndex<T, S> for usize {
     }
 }
 
-impl<T, S> SliceIndex<T, S> for Range<usize> {
+impl<T, S: Sentinel<T>> SliceIndex<T, S> for Range<usize> {
     type Output = [T];
 
     #[inline(always)]
@@ -56,7 +56,7 @@ impl<T, S> SliceIndex<T, S> for Range<usize> {
     }
 }
 
-impl<T, S> SliceIndex<T, S> for RangeTo<usize> {
+impl<T, S: Sentinel<T>> SliceIndex<T, S> for RangeTo<usize> {
     type Output = [T];
 
     #[inline(always)]
@@ -70,7 +70,7 @@ impl<T, S> SliceIndex<T, S> for RangeTo<usize> {
     }
 }
 
-impl<T, S> SliceIndex<T, S> for RangeToInclusive<usize> {
+impl<T, S: Sentinel<T>> SliceIndex<T, S> for RangeToInclusive<usize> {
     type Output = [T];
 
     #[inline(always)]
