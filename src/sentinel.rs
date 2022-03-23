@@ -7,10 +7,11 @@
 ///
 /// The associated [`find_sentinel`] method must be coherent with the [`is_sentinel`] method. It
 /// must return the smallest index such that evaluating [`is_sentinel`] on the value returns
-/// `true`.
+/// `true`. Same for [`find_sentinel_infinite`].
 ///
 /// [`is_sentinel`]: Sentinel::is_sentinel
 /// [`find_sentinel`]: Sentinel::find_sentinel
+/// [`find_sentinel_infinite`]: Sentinel::find_sentinel_infinite
 pub unsafe trait Sentinel<T> {
     /// Determines whether `T` is a sentinel value.
     fn is_sentinel(value: &T) -> bool;

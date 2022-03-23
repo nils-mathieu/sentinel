@@ -33,6 +33,14 @@ impl<'a, T, S: Sentinel<T>> Iterator for &'a Iter<T, S> {
         let len = self.len();
         (len, Some(len))
     }
+
+    #[inline(always)]
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
+        self.len()
+    }
 }
 
 impl<'a, T, S: Sentinel<T>> ExactSizeIterator for &'a Iter<T, S> {
@@ -62,6 +70,14 @@ impl<'a, T, S: Sentinel<T>> Iterator for &'a mut Iter<T, S> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = self.len();
         (len, Some(len))
+    }
+
+    #[inline(always)]
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
+        self.len()
     }
 }
 

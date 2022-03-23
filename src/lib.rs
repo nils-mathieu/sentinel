@@ -65,6 +65,82 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
         &mut *(ptr as *mut Self)
     }
 
+    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    ///
+    /// If the slice contains a sentinel character, the function retuns a [`Slice<T, S>`]
+    /// referencing the elements stored in `T` up to (and including) the first sentinel
+    /// character. The remaining of the slice is returned as well.
+    ///
+    /// Otherwise, the function returns [`None`]
+    #[inline]
+    pub fn from_slice_split(slice: &[T]) -> Option<(&Self, &[T])> {
+        if let Some(idx) = S::find_sentinel(slice) {
+            Some(unsafe {
+                (
+                    Self::from_ptr(slice.as_ptr()),
+                    core::slice::from_raw_parts(
+                        slice.as_ptr().add(idx).add(1),
+                        slice.len().wrapping_sub(idx).wrapping_sub(1),
+                    ),
+                )
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    ///
+    /// If the slice contains a sentinel character, the function returns [`Slice<T, S>`]
+    /// referencing the elements stored in `T` up to (and including) the first sentinel
+    /// character. Otherwise, the function returns [`None`].
+    #[inline]
+    pub fn from_slice(slice: &[T]) -> Option<&Self> {
+        if S::find_sentinel(slice).is_some() {
+            Some(unsafe { Self::from_ptr(slice.as_ptr()) })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    ///
+    /// If the slice contains a sentinel character, the function retuns a [`Slice<T, S>`]
+    /// referencing the elements stored in `T` up to (and including) the first sentinel
+    /// character. The remaining of the slice is returned as well.
+    ///
+    /// Otherwise, the function returns [`None`]
+    #[inline]
+    pub fn from_slice_split_mut(slice: &mut [T]) -> Option<(&mut Self, &mut [T])> {
+        if let Some(idx) = S::find_sentinel(slice) {
+            Some(unsafe {
+                (
+                    Self::from_mut_ptr(slice.as_mut_ptr()),
+                    core::slice::from_raw_parts_mut(
+                        slice.as_mut_ptr().add(idx).add(1),
+                        slice.len().wrapping_sub(idx).wrapping_sub(1),
+                    ),
+                )
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a [`Slice<T, S>`] instance from the provided slice.
+    ///
+    /// If the slice contains a sentinel character, the function returns [`Slice<T, S>`]
+    /// referencing the elements stored in `T` up to (and including) the first sentinel
+    /// character. Otherwise, the function returns [`None`].
+    #[inline]
+    pub fn from_slice_mut(slice: &mut [T]) -> Option<&mut Self> {
+        if S::find_sentinel(slice).is_some() {
+            Some(unsafe { Self::from_mut_ptr(slice.as_mut_ptr()) })
+        } else {
+            None
+        }
+    }
+
     /// Returns a pointer to the first element that is part of the slice.
     #[inline(always)]
     pub const fn as_ptr(&self) -> *const T {
@@ -179,6 +255,44 @@ impl<T, S: Sentinel<T>> Slice<T, S> {
                 ))
             }
         }
+    }
+
+    /// Returns a shared reference to the first element of the slice, or a sentinel
+    /// value if the slice is empty.
+    ///
+    /// ## Safety
+    ///
+    /// If the returned value is a sentinel, it must not be modified (or rather, it must remain
+    /// a sentinel).
+    #[inline(always)]
+    pub unsafe fn raw_first(&self) -> &T {
+        &*self.as_ptr()
+    }
+
+    /// Returns an exclusive reference to the first element of the slice, or a sentinel value if
+    /// the slice is empty.
+    ///
+    /// ## Safety
+    ///
+    /// If the returned value is a sentinel, it must not be modified (or rather, it must remain
+    /// a sentinel).
+    #[inline(always)]
+    pub unsafe fn raw_first_mut(&mut self) -> &mut T {
+        &mut *self.as_mut_ptr()
+    }
+
+    /// Returns a slice referencing every element of this [`Slice<T, S>`].
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        let len = self.len();
+        unsafe { core::slice::from_raw_parts(self.as_ptr(), len) }
+    }
+
+    /// Returns a slice referencing every element of this [`Slice<T, S>`].
+    #[inline]
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        let len = self.len();
+        unsafe { core::slice::from_raw_parts_mut(self.as_mut_ptr(), len) }
     }
 }
 
