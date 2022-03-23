@@ -170,7 +170,7 @@ impl<T, S: Sentinel<T>, A: Allocator> Drop for SBox<T, S, A> {
 
         let to_drop: *mut SSlice<T, S> = self.as_mut();
 
-        // Makes sure that the memory will be properly dropped even when dropping the
+        // Makes sure that the memory will be properly freed even when dropping the
         // slice fails.
         let _guard = DropGuard { b: self };
 
@@ -236,10 +236,13 @@ impl<'a, T> SliceGuard<'a, T> {
             initialized: 0,
         }
     }
+
     /// Initializes the inner slice with the provided function.
     pub fn initialize(mut self, mut f: impl FnMut(usize) -> T) {
         unsafe {
             while self.initialized < self.slice.len() {
+                #[cfg(test)]
+                println!("{}", self.initialized);
                 self.slice
                     .get_unchecked_mut(self.initialized)
                     .write(f(self.initialized));
@@ -257,7 +260,7 @@ impl<'a, T> Drop for SliceGuard<'a, T> {
         unsafe {
             let to_drop = core::slice::from_raw_parts_mut(
                 self.slice.as_mut_ptr() as *mut T,
-                self.slice.len(),
+                self.initialized,
             );
             core::ptr::drop_in_place(to_drop)
         }
@@ -380,4 +383,64 @@ where
     fn cmp(&self, other: &Self) -> Ordering {
         self.as_ref().cmp(other.as_ref())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn drop_count() {
+    use alloc::rc::Rc;
+
+    let rc = Rc::new(());
+    let slice = [
+        Some(rc.clone()),
+        Some(rc.clone()),
+        Some(rc.clone()),
+        Some(rc.clone()),
+        None,
+    ];
+    assert_eq!(Rc::strong_count(&rc), 5);
+    let sslice = SSlice::<Option<Rc<()>>>::from_slice(&slice).unwrap();
+    let b = SBox::from_sslice(sslice);
+    assert_eq!(Rc::strong_count(&rc), 9);
+    drop(slice);
+    assert_eq!(Rc::strong_count(&rc), 5);
+    drop(b);
+    assert_eq!(Rc::strong_count(&rc), 1);
+}
+
+#[cfg(test)]
+#[test]
+fn drop_count_panic() {
+    #[derive(Clone)]
+    struct PanicOnDrop(bool);
+
+    impl Drop for PanicOnDrop {
+        fn drop(&mut self) {
+            if self.0 {
+                panic!("lol");
+            }
+        }
+    }
+
+    use alloc::rc::Rc;
+
+    let rc = Rc::new(());
+    let slice = [
+        Some((rc.clone(), PanicOnDrop(false), rc.clone())),
+        Some((rc.clone(), PanicOnDrop(false), rc.clone())),
+        Some((rc.clone(), PanicOnDrop(true), rc.clone())),
+        Some((rc.clone(), PanicOnDrop(false), rc.clone())),
+        Some((rc.clone(), PanicOnDrop(false), rc.clone())),
+        None,
+    ];
+    assert_eq!(Rc::strong_count(&rc), 11);
+    let sslice = SSlice::<Option<(Rc<()>, PanicOnDrop, Rc<()>)>>::from_slice(&slice).unwrap();
+    let b = SBox::from_sslice(sslice);
+    assert_eq!(Rc::strong_count(&rc), 21);
+    let ret = std::panic::catch_unwind(|| drop(slice));
+    assert!(ret.is_err());
+    assert_eq!(Rc::strong_count(&rc), 11);
+    let ret = std::panic::catch_unwind(|| drop(b));
+    assert!(ret.is_err());
+    assert_eq!(Rc::strong_count(&rc), 1);
 }

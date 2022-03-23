@@ -23,11 +23,11 @@ pub unsafe trait Sentinel<T> {
     /// A sentinel value must exist in the allocated object referenced by the pointer. Every
     /// element up to (and including) the sentinel, must be initialized and valid for reads.
     unsafe fn find_sentinel_infinite(start: *const T) -> usize {
-        let mut cur = start;
-        while !Self::is_sentinel(&*cur) {
-            cur = cur.add(1);
+        let mut index = 0;
+        while !Self::is_sentinel(&*start.add(index)) {
+            index += 1;
         }
-        cur as usize - start as usize
+        index
     }
 
     /// Returns the index of the first sentinel value of the provied slice.
