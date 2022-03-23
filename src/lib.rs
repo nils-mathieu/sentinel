@@ -89,19 +89,17 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Otherwise, the function returns [`None`]
     #[inline]
     pub fn from_slice_split(slice: &[T]) -> Option<(&Self, &[T])> {
-        if let Some(idx) = S::find_sentinel(slice) {
-            Some(unsafe {
-                (
-                    Self::from_ptr(slice.as_ptr()),
-                    core::slice::from_raw_parts(
-                        slice.as_ptr().add(idx).add(1),
-                        slice.len().wrapping_sub(idx).wrapping_sub(1),
-                    ),
-                )
-            })
-        } else {
-            None
-        }
+        let idx = S::find_sentinel(slice)?;
+
+        Some(unsafe {
+            (
+                Self::from_ptr(slice.as_ptr()),
+                core::slice::from_raw_parts(
+                    slice.as_ptr().add(idx).add(1),
+                    slice.len().wrapping_sub(idx).wrapping_sub(1),
+                ),
+            )
+        })
     }
 
     /// Creates a [`SSlice<T, S>`] instance from the provided slice.
@@ -127,19 +125,17 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Otherwise, the function returns [`None`]
     #[inline]
     pub fn from_slice_split_mut(slice: &mut [T]) -> Option<(&mut Self, &mut [T])> {
-        if let Some(idx) = S::find_sentinel(slice) {
-            Some(unsafe {
-                (
-                    Self::from_mut_ptr(slice.as_mut_ptr()),
-                    core::slice::from_raw_parts_mut(
-                        slice.as_mut_ptr().add(idx).add(1),
-                        slice.len().wrapping_sub(idx).wrapping_sub(1),
-                    ),
-                )
-            })
-        } else {
-            None
-        }
+        let idx = S::find_sentinel(slice)?;
+
+        Some(unsafe {
+            (
+                Self::from_mut_ptr(slice.as_mut_ptr()),
+                core::slice::from_raw_parts_mut(
+                    slice.as_mut_ptr().add(idx).add(1),
+                    slice.len().wrapping_sub(idx).wrapping_sub(1),
+                ),
+            )
+        })
     }
 
     /// Creates a [`SSlice<T, S>`] instance from the provided slice.
