@@ -15,6 +15,9 @@ use alloc::alloc::Global;
 
 #[cfg(not(feature = "nightly"))]
 mod __allocator_replacement {
+    // When the `nightly` feature is not enabled, this module replaces the `Allocator` trait, as
+    // well as the `Global` type.
+
     use core::alloc::Layout;
     use core::fmt;
     use core::ptr::NonNull;

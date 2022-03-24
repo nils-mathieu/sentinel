@@ -19,4 +19,4 @@ null = ["memchr"]
 nightly = []
 
 [dependencies]
-memchr = { version = "2", optional = true }
+memchr = { version = "2", default-features = false, optional = true }

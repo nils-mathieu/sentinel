@@ -61,7 +61,7 @@ Because of this, we can define a [`CStr`] type, which is -unlike the standard li
 
  - `null` - this feature enables the [`Null`] type, which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
 
- - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`].
+ - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`]. This feature also enables support for the new `allocator_api` unstable feature.
 
 *`null` and `alloc` are enabled by default.*
 
