@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
+#![cfg_attr(feature = "nightly", feature(core_ffi_c))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -19,11 +20,6 @@ mod null;
 #[cfg(feature = "null")]
 pub use self::null::*;
 
-#[cfg(feature = "null")]
-mod cstr;
-#[cfg(feature = "null")]
-pub use self::cstr::*;
-
 mod iter;
 pub use self::iter::*;
 
@@ -32,6 +28,8 @@ mod sbox;
 #[cfg(any(feature = "nightly", feature = "alloc"))]
 pub use self::sbox::*;
 
+#[cfg(feature = "null")]
+mod display;
 mod index;
 
 #[cfg(feature = "nightly")]

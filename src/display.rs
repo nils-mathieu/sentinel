@@ -1,18 +1,21 @@
 use core::fmt;
 use core::fmt::Write;
 
-use crate::Null;
+use crate::{Null, SSlice};
 
-/// A null-terminated C-like string.
-///
-/// Unlike the standard library's `CStr`, a reference to this type has the size of a single pointer
-/// (rather than two).
-pub type CStr = crate::SSlice<i8, Null>;
+#[cfg(feature = "nightly")]
+use core::ffi::c_char;
 
-impl CStr {
-    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.
+#[cfg(not(feature = "nightly"))]
+#[allow(non_camel_case_types)]
+type c_char = i8;
+
+impl SSlice<c_char, Null> {
+    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`SSlice<i8>`] type.
     ///
-    /// When an invalid character is found, a replacement character is displayed instead.
+    /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
+    ///
+    /// [`REPLACEMENT_CHARACTER`]: core::char::REPLACEMENT_CHARACTER
     #[inline(always)]
     pub fn display(&self) -> &DisplayCStr {
         unsafe { &*(self as *const Self as *const DisplayCStr) }
@@ -21,7 +24,7 @@ impl CStr {
 
 /// Implements [`fmt::Display`] [`fmt::Debug`] for a [`CStr`].
 #[repr(transparent)]
-pub struct DisplayCStr(CStr);
+pub struct DisplayCStr(SSlice<c_char, Null>);
 
 impl fmt::Display for DisplayCStr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
