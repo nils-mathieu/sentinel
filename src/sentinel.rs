@@ -36,3 +36,17 @@ pub unsafe trait Sentinel<T> {
         slice.iter().position(Self::is_sentinel)
     }
 }
+
+/// A sub-trait of [`Sentinel`] that defines a "default" sentinel value.
+///
+/// ## Safety
+///
+/// [`default_sentinel`] must return an instance of `T` that causes [`is_sentinel`] to return
+/// `true`.
+///
+/// [`default_sentinel`]: DefaultSentinel::default_sentinel
+/// [`is_sentinel`]: Sentinel::is_sentinel
+pub unsafe trait DefaultSentinel<T>: Sentinel<T> {
+    /// Returns a "default" sentinel value.
+    fn default_sentinel() -> T;
+}

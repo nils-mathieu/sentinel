@@ -2,6 +2,7 @@
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
 #![cfg_attr(feature = "nightly", feature(core_ffi_c))]
+#![cfg_attr(feature = "nightly", feature(ptr_metadata))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
