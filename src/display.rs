@@ -3,14 +3,7 @@ use core::fmt::Write;
 
 use crate::{Null, SSlice};
 
-#[cfg(feature = "nightly")]
-use core::ffi::c_char;
-
-#[cfg(not(feature = "nightly"))]
-#[allow(non_camel_case_types)]
-type c_char = i8;
-
-impl SSlice<c_char, Null> {
+impl SSlice<u8, Null> {
     /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`SSlice<i8>`] type.
     ///
     /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
@@ -24,11 +17,11 @@ impl SSlice<c_char, Null> {
 
 /// Implements [`fmt::Display`] [`fmt::Debug`] for a [`CStr`].
 #[repr(transparent)]
-pub struct DisplayCStr(SSlice<c_char, Null>);
+pub struct DisplayCStr(SSlice<u8, Null>);
 
 impl fmt::Display for DisplayCStr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for opt in DecodeUtf8(self.0.iter().map(|i| *i as u8)) {
+        for opt in DecodeUtf8(self.0.iter().copied()) {
             f.write_char(opt.unwrap_or(char::REPLACEMENT_CHARACTER))?;
         }
         Ok(())
@@ -37,7 +30,7 @@ impl fmt::Display for DisplayCStr {
 
 impl fmt::Debug for DisplayCStr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for opt in DecodeUtf8(self.0.iter().map(|i| *i as u8)) {
+        for opt in DecodeUtf8(self.0.iter().copied()) {
             fmt::Display::fmt(
                 &opt.unwrap_or(char::REPLACEMENT_CHARACTER).escape_debug(),
                 f,
