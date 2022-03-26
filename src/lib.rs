@@ -293,17 +293,35 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
         &mut *self.as_mut_ptr()
     }
 
-    /// Returns a slice referencing every element of this [`SSlice<T, S>`].
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`], not including the
+    /// terminating sentinel character.
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         let len = self.len();
         unsafe { core::slice::from_raw_parts(self.as_ptr(), len) }
     }
 
-    /// Returns a slice referencing every element of this [`SSlice<T, S>`].
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`], not including the
+    /// terminating sentinel character.
     #[inline]
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         let len = self.len();
+        unsafe { core::slice::from_raw_parts_mut(self.as_mut_ptr(), len) }
+    }
+
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`], including the
+    /// terminating sentinel character.
+    #[inline]
+    pub fn as_slice_with_sentinel(&self) -> &[T] {
+        let len = self.len().wrapping_add(1);
+        unsafe { core::slice::from_raw_parts(self.as_ptr(), len) }
+    }
+
+    /// Returns a slice referencing every element of this [`SSlice<T, S>`], including the
+    /// terminating sentinel character.
+    #[inline]
+    pub fn as_slice_with_sentinel_mut(&mut self) -> &mut [T] {
+        let len = self.len().wrapping_add(1);
         unsafe { core::slice::from_raw_parts_mut(self.as_mut_ptr(), len) }
     }
 }

@@ -76,42 +76,59 @@ pub struct SBox<
 
 impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     /// Clones the content of `slice` into a [`SBox<T, S>`].
+    #[inline]
     pub fn from_sslice_in(slice: &SSlice<T, S>, allocator: A) -> Result<Self, AllocError>
     where
         T: Clone,
     {
-        let len = slice.len().wrapping_add(1);
-        let layout = match Layout::array::<T>(len) {
-            Ok(ok) => ok,
-            Err(_) => return Err(AllocError),
-        };
-
-        let data = allocator.allocate(layout)?.as_ptr() as *mut T;
-
-        unsafe {
-            let to_init = core::slice::from_raw_parts_mut(data as *mut MaybeUninit<T>, len);
-            SliceGuard::new(to_init).initialize(|i| slice.get_unchecked(i).clone());
-        }
-
-        Ok(unsafe { Self::from_raw_parts(data, allocator) })
+        unsafe { Self::from_slice_unchecked_in(slice.as_slice_with_sentinel(), allocator) }
     }
 
     /// Copies the content of `slice` into a [`SBox<T, S>`].
+    #[inline]
     pub fn copy_sslice_in(slice: &SSlice<T, S>, allocator: A) -> Result<Self, AllocError>
     where
         T: Copy,
     {
-        let len = slice.len().wrapping_add(1);
-        let layout = match Layout::array::<T>(len) {
-            Ok(ok) => ok,
-            Err(_) => return Err(AllocError),
-        };
+        unsafe { Self::copy_slice_unchecked_in(slice.as_slice_with_sentinel(), allocator) }
+    }
 
-        let data = allocator.allocate(layout)?.as_ptr() as *mut T;
+    /// Creates a new [`SBox<T, S>`] from the provided slice.
+    ///
+    /// ## Safety
+    ///
+    /// `slice` must end with a terminating character. Apart from this one, it must contain no
+    /// terminating characters.
+    pub unsafe fn from_slice_unchecked_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
+    where
+        T: Clone,
+    {
+        let mut raw_box = RawBox::new_unchecked_in(slice.len(), allocator)?;
+        init_slice(raw_box.as_slice_mut(), |i| slice.get_unchecked(i).clone());
+        let (data, _size, allocator) = raw_box.into_raw_parts();
+        Ok(Self {
+            data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
+            allocator,
+        })
+    }
 
-        unsafe { core::ptr::copy_nonoverlapping(slice.as_ptr(), data, len) };
-
-        Ok(unsafe { Self::from_raw_parts(data, allocator) })
+    /// Creates a new [`SBox<T, S>`] from the provided slice.
+    ///
+    /// ## Safety
+    ///
+    /// `slice` must end with a terminating character. Apart from this one, it must contain no
+    /// terminating characters.
+    pub unsafe fn copy_slice_unchecked_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
+    where
+        T: Copy,
+    {
+        let (data, size, allocator) =
+            RawBox::<T, _>::new_unchecked_in(slice.len(), allocator)?.into_raw_parts();
+        core::ptr::copy_nonoverlapping(slice.as_ptr(), data.as_ptr().cast(), size);
+        Ok(Self {
+            data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
+            allocator,
+        })
     }
 
     /// Turns the provided [`SBox<T, S>`] into its raw representation.
@@ -244,51 +261,6 @@ impl<T, S: Sentinel<T>, A: Allocator> BorrowMut<SSlice<T, S>> for SBox<T, S, A> 
     }
 }
 
-/// An utility struct used to initialize a slice.
-struct SliceGuard<'a, T> {
-    slice: &'a mut [MaybeUninit<T>],
-    initialized: usize,
-}
-
-impl<'a, T> SliceGuard<'a, T> {
-    /// Creates a new [`SliceGuard<T>`] instance.
-    pub fn new(slice: &'a mut [MaybeUninit<T>]) -> Self {
-        Self {
-            slice,
-            initialized: 0,
-        }
-    }
-
-    /// Initializes the inner slice with the provided function.
-    pub fn initialize(mut self, mut f: impl FnMut(usize) -> T) {
-        unsafe {
-            while self.initialized < self.slice.len() {
-                #[cfg(test)]
-                println!("{}", self.initialized);
-                self.slice
-                    .get_unchecked_mut(self.initialized)
-                    .write(f(self.initialized));
-                self.initialized += 1;
-            }
-
-            // Avoid dropping the now-initialized slice.
-            core::mem::forget(self);
-        }
-    }
-}
-
-impl<'a, T> Drop for SliceGuard<'a, T> {
-    fn drop(&mut self) {
-        unsafe {
-            let to_drop = core::slice::from_raw_parts_mut(
-                self.slice.as_mut_ptr() as *mut T,
-                self.initialized,
-            );
-            core::ptr::drop_in_place(to_drop)
-        }
-    }
-}
-
 impl<T, S, U, A> PartialEq<U> for SBox<T, S, A>
 where
     A: Allocator,
@@ -407,6 +379,93 @@ where
     }
 }
 
+/// A raw allocation of uninitialized `T`s.
+struct RawBox<T, A: Allocator> {
+    data: NonNull<MaybeUninit<T>>,
+    size: usize,
+    allocator: A,
+}
+
+impl<T, A: Allocator> RawBox<T, A> {
+    /// Allocates a new [`RawBox<T, A>`] of the given size.
+    ///
+    /// ## Safety
+    ///
+    /// `size * size_of::<T>` must not overflow `isize::MAX`.
+    pub unsafe fn new_unchecked_in(size: usize, allocator: A) -> Result<Self, AllocError> {
+        let layout =
+            Layout::from_size_align_unchecked(size.wrapping_mul(size_of::<T>()), align_of::<T>());
+
+        Ok(Self {
+            data: allocator.allocate(layout)?.cast(),
+            size,
+            allocator,
+        })
+    }
+
+    /// Returns an exclusive pointer to the allocated slice.
+    #[inline]
+    pub fn as_slice_mut(&mut self) -> &mut [MaybeUninit<T>] {
+        unsafe { core::slice::from_raw_parts_mut(self.data.as_ptr(), self.size) }
+    }
+
+    /// Returns the raw parts of this [`RawBox<T, A>`], preventing it from being dropped.
+    #[inline]
+    pub fn into_raw_parts(self) -> (NonNull<MaybeUninit<T>>, usize, A) {
+        unsafe {
+            let this = ManuallyDrop::new(self);
+            let allocator = core::ptr::read(&this.allocator);
+            (this.data, this.size, allocator)
+        }
+    }
+}
+
+impl<T, A: Allocator> Drop for RawBox<T, A> {
+    fn drop(&mut self) {
+        unsafe {
+            let layout = Layout::from_size_align_unchecked(
+                self.size.wrapping_mul(size_of::<T>()),
+                align_of::<T>(),
+            );
+            self.allocator.deallocate(self.data.cast(), layout);
+        }
+    }
+}
+
+/// Initializes a slice using the given function.
+///
+/// If a panic occurs, the currently initialized elements are dropped.
+fn init_slice<T>(slice: &mut [MaybeUninit<T>], mut f: impl FnMut(usize) -> T) {
+    struct Guard<'a, T> {
+        initialized: usize,
+        slice: &'a mut [MaybeUninit<T>],
+    }
+
+    impl<'a, T> Drop for Guard<'a, T> {
+        fn drop(&mut self) {
+            unsafe {
+                let to_drop = core::ptr::slice_from_raw_parts_mut(
+                    self.slice.as_mut_ptr() as *mut T,
+                    self.initialized,
+                );
+                core::ptr::drop_in_place(to_drop);
+            }
+        }
+    }
+
+    let mut guard = Guard {
+        initialized: 0,
+        slice,
+    };
+
+    while guard.initialized < guard.slice.len() {
+        unsafe { guard.slice.get_unchecked_mut(guard.initialized) }.write(f(guard.initialized));
+        guard.initialized += 1;
+    }
+
+    core::mem::forget(guard);
+}
+
 #[cfg(test)]
 #[test]
 fn drop_count() {
@@ -465,4 +524,33 @@ fn drop_count_panic() {
     let ret = std::panic::catch_unwind(|| drop(b));
     assert!(ret.is_err());
     assert_eq!(Rc::strong_count(&rc), 1);
+}
+
+#[cfg(test)]
+#[test]
+fn clone_impl_panics() {
+    struct PanicOnClone(bool);
+
+    impl Clone for PanicOnClone {
+        fn clone(&self) -> Self {
+            panic!("lol");
+        }
+    }
+
+    use alloc::rc::Rc;
+
+    let rc = Rc::new(());
+    let slice = [
+        Some((rc.clone(), PanicOnClone(false), rc.clone())),
+        Some((rc.clone(), PanicOnClone(false), rc.clone())),
+        Some((rc.clone(), PanicOnClone(true), rc.clone())),
+        Some((rc.clone(), PanicOnClone(false), rc.clone())),
+        Some((rc.clone(), PanicOnClone(false), rc.clone())),
+        None,
+    ];
+    assert_eq!(Rc::strong_count(&rc), 11);
+    let sslice = SSlice::<Option<(Rc<()>, PanicOnClone, Rc<()>)>>::from_slice(&slice).unwrap();
+    let ret = std::panic::catch_unwind(|| SBox::from_sslice(sslice));
+    assert!(ret.is_err());
+    assert_eq!(Rc::strong_count(&rc), 11);
 }
