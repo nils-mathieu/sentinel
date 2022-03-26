@@ -53,8 +53,6 @@ pub struct SSlice<T, S: Sentinel<T>> {
 
 Note that this type actually contains no data. Only references to this type can be created (i.e. `&SSlice<T, S>` or `&mut SSlice<T, S>`), and those references have the size a single `usize`.
 
-Because of this, we can define a [`CStr`] type, which is -unlike the standard library's- FFI-safe and matches the C-definition of a C-like `char *` string.
-
 ## Features
 
  - `alloc` - adds support for the `alloc` crate. This adds the [`SBox<T, S>`] type.
@@ -76,4 +74,3 @@ Every pre-0.2 versions (on crates.io) contain the source code of that crate.
 [`Null`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.Null.html
 [`SBox<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SBox.html
 [`SSlice<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SSlice.html
-[`CStr`]: https://docs.rs/sentinel/0.2.0/sentinel/type.CStr.html
