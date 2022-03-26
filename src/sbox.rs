@@ -84,15 +84,6 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
         unsafe { Self::from_slice_unchecked_in(slice.as_slice_with_sentinel(), allocator) }
     }
 
-    /// Copies the content of `slice` into a [`SBox<T, S>`].
-    #[inline]
-    pub fn copy_sslice_in(slice: &SSlice<T, S>, allocator: A) -> Result<Self, AllocError>
-    where
-        T: Copy,
-    {
-        unsafe { Self::copy_slice_unchecked_in(slice.as_slice_with_sentinel(), allocator) }
-    }
-
     /// Creates a new [`SBox<T, S>`] from the provided slice.
     ///
     /// ## Safety
@@ -106,25 +97,6 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
         let mut raw_box = RawBox::new_unchecked_in(slice.len(), allocator)?;
         init_slice(raw_box.as_slice_mut(), |i| slice.get_unchecked(i).clone());
         let (data, _size, allocator) = raw_box.into_raw_parts();
-        Ok(Self {
-            data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
-            allocator,
-        })
-    }
-
-    /// Creates a new [`SBox<T, S>`] from the provided slice.
-    ///
-    /// ## Safety
-    ///
-    /// `slice` must end with a sentinel value. Apart from this one, it must contain no
-    /// sentinel value.
-    pub unsafe fn copy_slice_unchecked_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
-    where
-        T: Copy,
-    {
-        let (data, size, allocator) =
-            RawBox::<T, _>::new_unchecked_in(slice.len(), allocator)?.into_raw_parts();
-        core::ptr::copy_nonoverlapping(slice.as_ptr(), data.as_ptr().cast(), size);
         Ok(Self {
             data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
             allocator,
@@ -199,15 +171,6 @@ impl<T, S: Sentinel<T>> SBox<T, S> {
         T: Clone,
     {
         Self::from_sslice_in(slice, Global)
-    }
-
-    /// Copies the content of `slice` into a [`SBox<T, S>`].
-    #[inline(always)]
-    pub fn copy_sslice(slice: &SSlice<T, S>) -> Result<Self, AllocError>
-    where
-        T: Copy,
-    {
-        Self::copy_sslice_in(slice, Global)
     }
 
     /// Clones the content of `slice` into a [`SBox<T>`].
