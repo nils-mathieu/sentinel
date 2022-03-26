@@ -111,6 +111,11 @@ pub use self::sbox::*;
 mod display;
 mod index;
 
+#[cfg(feature = "cstr")]
+mod cstr;
+#[cfg(feature = "cstr")]
+pub use self::cstr::*;
+
 #[cfg(feature = "nightly")]
 extern "C" {
     type SliceContent;

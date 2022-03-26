@@ -12,11 +12,12 @@ readme = "readme.md"
 documentation = "https://docs.rs/sentinel"
 
 [features]
-default = ["alloc", "null"]
+default = ["alloc", "null", "cstr"]
 
 alloc = []
 null = ["memchr"]
 nightly = []
+cstr = ["null"]
 
 [dependencies]
 memchr = { version = "2", default-features = false, optional = true }
