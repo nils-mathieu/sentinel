@@ -1,4 +1,4 @@
-use crate::Null;
+use crate::{Null, SSlice};
 
 #[cfg(feature = "nightly")]
 use core::ffi::c_char;
@@ -30,5 +30,25 @@ impl CStr {
     #[inline(always)]
     pub unsafe fn from_mut_ptr<'a>(p: *mut c_char) -> &'a mut Self {
         &mut *(p as *mut Self)
+    }
+
+    /// Creates a new [`CStr`] from the provided `SSlice<c_char>`.
+    ///
+    /// ## Safety
+    ///
+    /// The provided slice must reference valid `UTF-8` data.
+    #[inline(always)]
+    pub const unsafe fn from_sslice_unchecked(sslice: &SSlice<c_char, Null>) -> &Self {
+        &*(sslice as *const _ as *const Self)
+    }
+
+    /// Creates a new [`CStr`] from the provided `SSlice<c_char>`.
+    ///
+    /// ## Safety
+    ///
+    /// The provided slice must reference valid `UTF-8` data.
+    #[inline(always)]
+    pub unsafe fn from_sslice_unchecked_mut(sslice: &mut SSlice<c_char, Null>) -> &mut Self {
+        &mut *(sslice as *mut _ as *mut Self)
     }
 }
