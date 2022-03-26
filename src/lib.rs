@@ -20,7 +20,7 @@
 //! ### Sentinels?
 //!
 //! A sentinel is a special value that is used to determine the end of an array. For example, in C,
-//! the `char *` type is a pointer to a "null-terminated" string. This is an example of
+//! the `char *` type may be a pointer to a "null-terminated" string. This is an example of
 //! sentinel-terminated slice.
 //!
 //! ```txt
@@ -40,7 +40,7 @@
 //! is roughly defined like that:
 //!
 //! ```Rust
-//! pub trait Sentinel<T> {
+//! trait Sentinel<T> {
 //!     fn is_sentinel(val: &T) -> bool;
 //! }
 //! ```
@@ -51,10 +51,11 @@
 //! ### SSlice
 //!
 //! Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`SSlice<T, S>`]
-//! type. It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining which instances of `T` should be considered sentinel values.
+//! type. It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining
+//! which instances of `T` should be considered sentinel values.
 //!
 //! ```Rust
-//! pub struct SSlice<T, S: Sentinel<T>> {
+//! struct SSlice<T, S: Sentinel<T>> {
 //!     _marker: PhantomData<(T, S)>,
 //! }
 //! ```

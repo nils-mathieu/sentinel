@@ -16,7 +16,7 @@ There is however two main problems with the `&[T]` type:
 
 ### Sentinels?
 
-A sentinel is a special value that is used to determine the end of an array. For example, in C, the `char *` type is a pointer to a "null-terminated" string. This is an example of sentinel-terminated slice.
+A sentinel is a special value that is used to determine the end of an array. For example, in C, the `char *` type can be a pointer to a "null-terminated" string. This is an example of sentinel-terminated slice.
 
 ```txt
 CString:
@@ -34,7 +34,7 @@ str:
 This crate remains generic over how sentinels are defined. It uses the [`Sentinel`] trait, which is roughly defined like that:
 
 ```Rust
-pub trait Sentinel<T> {
+trait Sentinel<T> {
     fn is_sentinel(val: &T) -> bool;
 }
 ```
@@ -46,7 +46,7 @@ It is used to determine whether a specific instance of `T` should be treated as 
 Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`SSlice<T, S>`] type. It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining which instances of `T` should be considered sentinel values.
 
 ```Rust
-pub struct SSlice<T, S: Sentinel<T>> {
+struct SSlice<T, S: Sentinel<T>> {
     _marker: PhantomData<(T, S)>,
 }
 ```
