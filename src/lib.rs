@@ -146,7 +146,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     ///
     /// This invalid must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
-    pub const unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
+    pub unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
         &*(ptr as *const Self)
     }
 
@@ -238,7 +238,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Returns a pointer to the first element that is part of the slice.
     #[inline(always)]
-    pub const fn as_ptr(&self) -> *const T {
+    pub fn as_ptr(&self) -> *const T {
         self as *const Self as *const T
     }
 
