@@ -8,7 +8,7 @@ use core::mem::{align_of, size_of, ManuallyDrop, MaybeUninit};
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 
-use crate::{SSlice, Sentinel};
+use crate::{DefaultSentinel, SSlice, Sentinel};
 
 #[cfg(all(feature = "nightly", feature = "alloc"))]
 use alloc::alloc::Global;
@@ -97,8 +97,8 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     ///
     /// ## Safety
     ///
-    /// `slice` must end with a terminating character. Apart from this one, it must contain no
-    /// terminating characters.
+    /// `slice` must end with a sentinel value. Apart from this one, it must contain no sentinel
+    /// values.
     pub unsafe fn from_slice_unchecked_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
     where
         T: Clone,
@@ -116,8 +116,8 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     ///
     /// ## Safety
     ///
-    /// `slice` must end with a terminating character. Apart from this one, it must contain no
-    /// terminating characters.
+    /// `slice` must end with a sentinel value. Apart from this one, it must contain no
+    /// sentinel value.
     pub unsafe fn copy_slice_unchecked_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
     where
         T: Copy,
@@ -129,6 +129,39 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
             data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
             allocator,
         })
+    }
+
+    /// Creates a new [`SBox<T, A>`] from the provided slice.
+    ///
+    /// If the slice contains a sentinel value, the procuded [`SBox<T>`] will only clone the values
+    /// up to that point. If the slice contains no sentinel value, a default sentinel value will
+    /// be used instead (see [`DefaultSentinel`]).
+    pub fn from_slice_in(slice: &[T], allocator: A) -> Result<Self, AllocError>
+    where
+        T: Clone,
+        S: DefaultSentinel<T>,
+    {
+        unsafe {
+            let (to_copy, mut raw_box) = if let Some(index) = S::find_sentinel(slice) {
+                let raw_box = RawBox::new_unchecked_in(slice.len(), allocator)?;
+                (index.wrapping_add(1), raw_box)
+            } else {
+                let mut raw_box = RawBox::new_unchecked_in(slice.len(), allocator)?;
+                raw_box
+                    .as_slice_mut()
+                    .get_unchecked_mut(slice.len())
+                    .write(S::default_sentinel());
+                (slice.len(), raw_box)
+            };
+
+            let to_copy = raw_box.as_slice_mut().get_unchecked_mut(..to_copy);
+            init_slice(to_copy, |i| slice.get_unchecked(i).clone());
+            let (data, _, allocator) = raw_box.into_raw_parts();
+            Ok(Self {
+                data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
+                allocator,
+            })
+        }
     }
 
     /// Turns the provided [`SBox<T, S>`] into its raw representation.
@@ -175,6 +208,19 @@ impl<T, S: Sentinel<T>> SBox<T, S> {
         T: Copy,
     {
         Self::copy_sslice_in(slice, Global)
+    }
+
+    /// Clones the content of `slice` into a [`SBox<T>`].
+    ///
+    /// If the provided slice contains a sentinel value, the produced box will contain values up to
+    /// that point. Otherwise, a default sentinel value will be used (see [`DefaultSentinel`]).
+    #[inline(always)]
+    pub fn from_slice(slice: &[T]) -> Result<Self, AllocError>
+    where
+        T: Clone,
+        S: DefaultSentinel<T>,
+    {
+        Self::from_slice_in(slice, Global)
     }
 }
 
