@@ -563,3 +563,23 @@ fn clone_impl_panics() {
     assert!(ret.is_err());
     assert_eq!(Rc::strong_count(&rc), 11);
 }
+
+#[cfg(test)]
+#[test]
+fn from_slice_with_sentinel() {
+    let slice = [1, 2, 3, 0, 1, 2, 3];
+
+    let b = SBox::<i32>::from_slice(&slice).unwrap();
+    assert_eq!(&*b, &[1, 2, 3]);
+    assert_eq!(b.as_slice_with_sentinel(), &[1, 2, 3, 0]);
+}
+
+#[cfg(test)]
+#[test]
+fn from_slice_no_sentinel() {
+    let slice = [1, 2, 3];
+
+    let b = SBox::<i32>::from_slice(&slice).unwrap();
+    assert_eq!(&*b, &[1, 2, 3]);
+    assert_eq!(b.as_slice_with_sentinel(), &[1, 2, 3, 0]);
+}
