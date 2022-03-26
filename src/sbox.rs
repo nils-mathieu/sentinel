@@ -95,7 +95,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
 
     /// Creates a new [`SBox<T, S>`] from the provided slice.
     ///
-    /// ## Safety
+    /// ## Safety
     ///
     /// `slice` must end with a terminating character. Apart from this one, it must contain no
     /// terminating characters.
@@ -114,7 +114,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
 
     /// Creates a new [`SBox<T, S>`] from the provided slice.
     ///
-    /// ## Safety
+    /// ## Safety
     ///
     /// `slice` must end with a terminating character. Apart from this one, it must contain no
     /// terminating characters.
