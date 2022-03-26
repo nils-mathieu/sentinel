@@ -79,7 +79,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
-#![cfg_attr(feature = "nightly", feature(core_ffi_c))]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
 
 #[cfg(feature = "alloc")]
@@ -115,6 +114,11 @@ mod index;
 mod cstr;
 #[cfg(feature = "cstr")]
 pub use self::cstr::*;
+
+#[cfg(feature = "cstr")]
+mod utf8;
+#[cfg(feature = "cstr")]
+pub use self::utf8::Utf8Error;
 
 #[cfg(feature = "nightly")]
 extern "C" {
