@@ -49,7 +49,7 @@ impl CStr {
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
     #[inline(always)]
     pub fn from_sslice(sslice: &SSlice<u8, Null>) -> Result<&Self, Utf8Error> {
-        match crate::utf8::verify_utf8(sslice) {
+        match crate::utf8::verify(sslice) {
             Ok(_) => unsafe { Ok(Self::from_sslice_unchecked(sslice)) },
             Err(err) => Err(err),
         }
@@ -58,7 +58,7 @@ impl CStr {
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
     #[inline(always)]
     pub fn from_sslice_mut(sslice: &mut SSlice<u8, Null>) -> Result<&mut Self, Utf8Error> {
-        match crate::utf8::verify_utf8(sslice) {
+        match crate::utf8::verify(sslice) {
             Ok(_) => unsafe { Ok(Self::from_sslice_unchecked_mut(sslice)) },
             Err(err) => Err(err),
         }
