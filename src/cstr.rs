@@ -88,6 +88,20 @@ impl CStr {
         unsafe { core::str::from_utf8_unchecked_mut(self.0.as_slice_mut()) }
     }
 
+    /// Returns a raw pointer to the first byte of the string.
+    #[inline(always)]
+    pub fn as_ptr(&self) -> *const u8 {
+        self.0.as_ptr()
+    }
+
+    /// Returns a raw pointer to the first byte of the string.
+    ///
+    /// Keep in mind that the [`CStr`] must remain valid UTF-8.
+    #[inline(always)]
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.0.as_mut_ptr()
+    }
+
     /// Returns a reference to the underlying [`SSlice<u8, Null>`] instance.
     #[inline(always)]
     pub fn as_bytes(&self) -> &SSlice<u8, Null> {
@@ -119,11 +133,92 @@ impl CStr {
     pub unsafe fn bytes_mut(&mut self) -> &mut Iter<u8, Null> {
         self.0.iter_mut()
     }
+
+    /// Returns an iterator over the characters of this [`CStr`].
+    #[inline(always)]
+    pub fn chars(&self) -> &Chars {
+        unsafe { &*(self as *const CStr as *const Chars) }
+    }
 }
 
 impl AsRef<SSlice<u8, Null>> for CStr {
     #[inline(always)]
     fn as_ref(&self) -> &SSlice<u8, Null> {
         self.as_bytes()
+    }
+}
+
+/// An iterator over the characters of a [`CStr`].
+#[repr(transparent)]
+pub struct Chars(CStr);
+
+impl Chars {
+    /// Returns a [`CStr`] owning the remaining characters of this iterator.
+    #[inline(always)]
+    pub fn remainder(&self) -> &CStr {
+        &self.0
+    }
+}
+
+impl<'a> Iterator for &'a Chars {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        let mut state = 0;
+        let mut code_point = 0;
+        let mut b;
+
+        unsafe {
+            b = *self.0.as_ptr();
+
+            // We have to check whether we are at the end of the string.
+            if b == 0 {
+                return None;
+            }
+
+            *self = &*(self.0.as_ptr().add(1) as *const Chars);
+        }
+
+        loop {
+            crate::utf8::decode(&mut state, &mut code_point, b);
+
+            if state == 0 {
+                // Safety:
+                //  `decode` is known to produce valid code points.
+                return Some(unsafe { char::from_u32_unchecked(code_point) });
+            } else {
+                // Safety:
+                //  We know our input is valid UTF-8. This *must* be a continuation character, and
+                //  cannot be the end of the string.
+                unsafe {
+                    b = *self.0.as_ptr();
+                    *self = &*(self.0.as_ptr().add(1) as *const Chars);
+                }
+            }
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<'a> ExactSizeIterator for &'a Chars {
+    fn len(&self) -> usize {
+        let mut count = 0;
+        let mut state = 0;
+        let mut code_point = 0;
+
+        for &byte in self.0.bytes() {
+            crate::utf8::decode(&mut state, &mut code_point, byte);
+
+            if state == 0 {
+                count += 1;
+            }
+        }
+
+        count
     }
 }
