@@ -54,10 +54,10 @@ pub fn verify(slice: &SSlice<u8>) -> Result<(usize, usize), Utf8Error> {
     for &byte in slice {
         decode(&mut state, &mut code_point, byte);
 
-        if state != 0 {
-            return Err(Utf8Error { valid_up_to: count });
-        } else {
-            count += 1;
+        match state {
+            0 => count += 1,
+            1 => return Err(Utf8Error { valid_up_to: len }),
+            _ => (),
         }
         len += 1;
     }
