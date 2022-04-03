@@ -13,6 +13,18 @@ impl<T, S: Sentinel<T>> Iter<T, S> {
     pub(crate) fn new_mut(slice: &mut SSlice<T, S>) -> &mut Self {
         unsafe { &mut *(slice as *mut SSlice<T, S> as *mut Self) }
     }
+
+    /// Returns a [`SSlice<T, S>`] over the remaining instances.
+    #[inline(always)]
+    pub fn remainder(&self) -> &SSlice<T, S> {
+        &self.0
+    }
+
+    /// Returns a [`SSlice<T, S>`] over the remaining instances.
+    #[inline(always)]
+    pub fn remainder_mut(&mut self) -> &mut SSlice<T, S> {
+        &mut self.0
+    }
 }
 
 impl<'a, T, S: Sentinel<T>> Iterator for &'a Iter<T, S> {
