@@ -1,4 +1,4 @@
-use crate::{Null, SSlice, Utf8Error};
+use crate::{Iter, Null, SSlice, Utf8Error};
 
 /// A null-terminated UTF-8 string.
 pub struct CStr(crate::SSlice<u8, Null>);
@@ -86,5 +86,44 @@ impl CStr {
     #[inline(always)]
     pub fn as_str_mut(&mut self) -> &mut str {
         unsafe { core::str::from_utf8_unchecked_mut(self.0.as_slice_mut()) }
+    }
+
+    /// Returns a reference to the underlying [`SSlice<u8, Null>`] instance.
+    #[inline(always)]
+    pub fn as_bytes(&self) -> &SSlice<u8, Null> {
+        &self.0
+    }
+
+    /// Returns a reference to the underlying [`SSlice<u8, Null>`] instance.
+    ///
+    /// ## Safety
+    ///
+    /// The bytes owned by the [`CStr`] must remain valid UTF-8.
+    #[inline(always)]
+    pub unsafe fn as_bytes_mut(&mut self) -> &mut SSlice<u8, Null> {
+        &mut self.0
+    }
+
+    /// Returns an iterator over the bytes of the [`CStr`].
+    #[inline(always)]
+    pub fn bytes(&self) -> &Iter<u8, Null> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator over the bytes of the [`CStr`].
+    ///
+    /// ## Safety
+    ///
+    /// The bytes owned by the [`CStr`] must remain valid UTF-8.
+    #[inline(always)]
+    pub unsafe fn bytes_mut(&mut self) -> &mut Iter<u8, Null> {
+        self.0.iter_mut()
+    }
+}
+
+impl AsRef<SSlice<u8, Null>> for CStr {
+    #[inline(always)]
+    fn as_ref(&self) -> &SSlice<u8, Null> {
+        self.as_bytes()
     }
 }
