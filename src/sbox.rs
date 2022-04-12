@@ -13,6 +13,9 @@ use crate::{DefaultSentinel, SSlice, Sentinel};
 #[cfg(all(feature = "nightly", feature = "alloc"))]
 use alloc::alloc::Global;
 
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
 #[cfg(not(feature = "nightly"))]
 mod __allocator_replacement {
     // When the `nightly` feature is not enabled, this module replaces the `Allocator` trait, as
@@ -160,6 +163,64 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
             allocator,
         }
     }
+
+    /// Creates an [`SBox<T>`] from the provided allocated box.
+    ///
+    /// ## Safety
+    ///
+    /// The last element of the slice must be a sentinel, and other elements must not.
+    #[cfg(feature = "nightly")]
+    pub unsafe fn from_box_unchecked(b: Box<[T], A>) -> Self {
+        let (data, allocator) = Box::into_raw_with_allocator(b);
+        Self::from_raw_parts(data as *mut T, allocator)
+    }
+
+    /// Creates an [`SBox<T>`] from the provided allocated box.
+    ///
+    /// If the box does not end with a sentinel value, or if it contains a sentinel value in
+    /// non-ending position, [`None`] is returned.
+    #[cfg(feature = "nightly")]
+    pub fn from_box(b: Box<[T], A>) -> Option<Self> {
+        if S::find_sentinel(&b) == Some(b.len().wrapping_sub(1)) {
+            Some(unsafe { Self::from_box_unchecked(b) })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a new [`SBox<T>`] from the values returned by the provided iterator. If a sentinel
+    /// value is returned, it is ignored.
+    #[cfg(feature = "nightly")]
+    pub fn from_iter_in(iter: impl IntoIterator<Item = T>, allocator: A) -> Result<Self, AllocError>
+    where
+        S: DefaultSentinel<T>,
+    {
+        let iter = iter.into_iter();
+        let mut vec = alloc::vec::Vec::with_capacity_in(iter.size_hint().0, allocator);
+
+        for elem in iter {
+            if S::is_sentinel(&elem) {
+                continue;
+            }
+
+            try_push(&mut vec, elem)?;
+        }
+
+        try_push(&mut vec, S::default_sentinel())?;
+
+        unsafe { Ok(Self::from_box_unchecked(vec.into_boxed_slice())) }
+    }
+}
+
+#[cfg(feature = "nightly")]
+fn try_push<T, A: Allocator>(v: &mut Vec<T, A>, val: T) -> Result<(), AllocError> {
+    v.try_reserve(1).map_err(|_| AllocError)?;
+    unsafe {
+        let len = v.len();
+        v.as_mut_ptr().add(len).write(val);
+        v.set_len(len.wrapping_add(1));
+    }
+    Ok(())
 }
 
 #[cfg(feature = "alloc")]
@@ -184,6 +245,30 @@ impl<T, S: Sentinel<T>> SBox<T, S> {
         S: DefaultSentinel<T>,
     {
         Self::from_slice_in(slice, Global)
+    }
+
+    /// Creates a [`SBox<T>`] from the provided allocated box.
+    ///
+    /// ## Safety
+    ///
+    /// The last element of the slice must be a sentinel, and other elements must not.
+    #[cfg(not(feature = "nightly"))]
+    pub unsafe fn from_box_unchecked(b: Box<[T]>) -> Self {
+        let data = Box::into_raw(b);
+        Self::from_raw_parts(data as *mut T, Global)
+    }
+
+    /// Creates an [`SBox<T>`] from the provided allocated box.
+    ///
+    /// If the box does not end with a sentinel value, or if it contains a sentinel value in
+    /// non-ending position, [`None`] is returned.
+    #[cfg(not(feature = "nightly"))]
+    pub fn from_box(b: Box<[T]>) -> Option<Self> {
+        if S::find_sentinel(&b) == Some(b.len().wrapping_sub(1)) {
+            Some(unsafe { Self::from_box_unchecked(b) })
+        } else {
+            None
+        }
     }
 }
 
@@ -212,6 +297,20 @@ impl<T, S: Sentinel<T>, A: Allocator> Drop for SBox<T, S, A> {
         let _guard = DropGuard { b: self };
 
         unsafe { core::ptr::drop_in_place(to_drop) }
+    }
+}
+
+impl<T, S: DefaultSentinel<T> + Sentinel<T>> FromIterator<T> for SBox<T, S> {
+    /// Creates a new [`SBox<T>`] from the values returned by the provided iterator. If a sentinel
+    /// value is returned, it is ignored.
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let b: Box<[T]> = iter
+            .into_iter()
+            .filter(|x| !S::is_sentinel(x))
+            .chain(Some(S::default_sentinel()))
+            .collect();
+
+        unsafe { Self::from_box_unchecked(b) }
     }
 }
 
