@@ -64,3 +64,31 @@ pub fn verify(slice: &SSlice<u8>) -> Result<(usize, usize), Utf8Error> {
 
     Ok((len, count))
 }
+
+/// An iterator over UTF-8 code-points.
+#[derive(Debug, Clone)]
+pub struct DecodeUtf8<I>(pub I);
+
+impl<I> Iterator for DecodeUtf8<I>
+where
+    I: Iterator<Item = u8>,
+{
+    type Item = Option<char>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut code_point = 0u32;
+        let mut state = 0;
+
+        for byte in &mut self.0 {
+            decode(&mut state, &mut code_point, byte);
+
+            match state {
+                0 => return Some(char::from_u32(code_point)),
+                1 => return Some(None),
+                _ => (),
+            }
+        }
+
+        None
+    }
+}
