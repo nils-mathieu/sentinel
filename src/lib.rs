@@ -614,6 +614,23 @@ impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
     }
 }
 
+/// Creates a new [`SSlice<u8>`] using a string literal. A null byte is automatically appended at
+/// the end of that literal, ensuring the safety of the operation.
+///
+/// # Examples
+///
+/// ```
+/// let s = sentinel::sslice!("Hello, World!");
+/// assert_eq!(s, b"Hello, World!");
+/// ```
+#[macro_export]
+#[cfg(feature = "cstr")]
+macro_rules! sslice {
+    ($s:literal) => {
+        unsafe { $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat!($s, "\0").as_ptr()) }
+    };
+}
+
 #[cfg(test)]
 #[test]
 fn from_slice() {
@@ -726,4 +743,18 @@ fn as_slice() {
     let s = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
     let sl = s.as_slice_mut();
     assert_eq!(sl, b"hello");
+}
+
+#[cfg(test)]
+#[test]
+fn sslice_macro() {
+    let s = sslice!("test");
+    assert_eq!(s, b"test");
+}
+
+#[cfg(test)]
+#[test]
+fn sslice_macro_empty() {
+    let s = sslice!("");
+    assert_eq!(s, b"");
 }
