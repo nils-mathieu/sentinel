@@ -411,6 +411,23 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 }
 
+#[cfg(feature = "cstr")]
+impl SSlice<core::ffi::c_char> {
+    /// Creates a new [`SSice<T>`] from the provided standard [`core::ffi::CStr`].
+    #[inline]
+    pub fn from_std_cstr(cstr: &core::ffi::CStr) -> &Self {
+        // Safety:
+        //  We know by invariant that the standard CStr is null-terminated.
+        unsafe { Self::from_ptr(cstr.as_ptr()) }
+    }
+
+    /// Turns this [`SSlice<T>`] into a standard [`core::ffi::CStr`].
+    #[inline]
+    pub fn as_std_cstr(&self) -> &core::ffi::CStr {
+        unsafe { core::ffi::CStr::from_ptr(self.as_ptr()) }
+    }
+}
+
 impl<T: Hash, S: Sentinel<T>> Hash for SSlice<T, S> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
