@@ -413,7 +413,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
 #[cfg(feature = "cstr")]
 impl SSlice<core::ffi::c_char> {
-    /// Creates a new [`SSice<T>`] from the provided standard [`core::ffi::CStr`].
+    /// Creates a new [`SSlice<T>`] from the provided standard [`core::ffi::CStr`].
     #[inline]
     pub fn from_std_cstr(cstr: &core::ffi::CStr) -> &Self {
         // Safety:
