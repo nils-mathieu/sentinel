@@ -79,7 +79,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
-#![cfg_attr(feature = "nightly", feature(core_ffi_c))]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
 
 #[cfg(feature = "alloc")]
@@ -94,9 +93,9 @@ use core::panic::{RefUnwindSafe, UnwindSafe};
 mod sentinel;
 pub use self::sentinel::*;
 
-#[cfg(feature = "null")]
+#[cfg(feature = "cstr")]
 mod null;
-#[cfg(feature = "null")]
+#[cfg(feature = "cstr")]
 pub use self::null::*;
 
 mod iter;
@@ -107,9 +106,17 @@ mod sbox;
 #[cfg(any(feature = "nightly", feature = "alloc"))]
 pub use self::sbox::*;
 
-#[cfg(feature = "null")]
+#[cfg(feature = "cstr")]
 mod display;
 mod index;
+
+#[cfg(feature = "cstr")]
+mod cstr;
+#[cfg(feature = "cstr")]
+pub use self::cstr::*;
+
+mod utf8;
+pub use self::utf8::Utf8Error;
 
 #[cfg(feature = "nightly")]
 extern "C" {
@@ -120,8 +127,8 @@ extern "C" {
 #[repr(transparent)]
 pub struct SSlice<
     T,
-    #[cfg(feature = "null")] S: Sentinel<T> = Null,
-    #[cfg(not(feature = "null"))] S: Sentinel<T>,
+    #[cfg(feature = "cstr")] S: Sentinel<T> = Null,
+    #[cfg(not(feature = "cstr"))] S: Sentinel<T>,
 > {
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
