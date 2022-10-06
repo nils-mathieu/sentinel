@@ -1,6 +1,6 @@
 [package]
 name = "sentinel"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 authors = ["Nils Mathieu <nils.mathieu.contact@gmail.com>"]
 description = "A sentinel-terminated slice library."
