@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::{Iter, Null, SSlice, Utf8Error};
 
 /// A null-terminated UTF-8 string.
@@ -220,5 +222,17 @@ impl<'a> ExactSizeIterator for &'a Chars {
         }
 
         count
+    }
+}
+
+impl fmt::Debug for CStr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self.as_str(), f)
+    }
+}
+
+impl fmt::Display for CStr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(self.as_str(), f)
     }
 }

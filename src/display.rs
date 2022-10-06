@@ -5,7 +5,7 @@ use crate::utf8::DecodeUtf8;
 use crate::{Null, SSlice};
 
 impl SSlice<u8, Null> {
-    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`SSlice<i8>`] type.
+    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`SSlice<u8>`] type.
     ///
     /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
     ///
