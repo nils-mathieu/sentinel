@@ -12,12 +12,15 @@ readme = "readme.md"
 documentation = "https://docs.rs/sentinel"
 
 [features]
-default = ["alloc", "null", "cstr"]
+default = ["alloc", "cstr"]
 
 alloc = []
-null = ["memchr"]
+cstr = ["memchr"]
 nightly = []
-cstr = ["null"]
 
 [dependencies]
 memchr = { version = "2", default-features = false, optional = true }
+
+[package.metadata.cargo-all-features]
+skip_optional_dependencies = true
+denylist = [ "nightly" ]
