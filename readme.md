@@ -69,8 +69,9 @@ The name `sentinel` was kindly given to me by the previous maintainer of [this](
 
 Every pre-0.2 versions (on crates.io) contain the source code of that crate.
  
-[`Sentinel`]: https://docs.rs/sentinel/0.2.0/sentinel/trait.Sentinel.html
+[`Sentinel`]: https://docs.rs/sentinel/latest/sentinel/trait.Sentinel.html
 [`!Sized`]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
-[`Null`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.Null.html
-[`SBox<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SBox.html
-[`SSlice<T, S>`]: https://docs.rs/sentinel/0.2.0/sentinel/struct.SSlice.html
+[`Null`]: https://docs.rs/sentinel/latest/sentinel/struct.Null.html
+[`SBox<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SBox.html
+[`CStr`]: https://docs.rs/sentinel/latest/sentinel/struct.CStr.html
+[`SSlice<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SSlice.html
