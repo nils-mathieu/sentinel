@@ -11,8 +11,8 @@ impl SSlice<u8, Null> {
     ///
     /// [`REPLACEMENT_CHARACTER`]: core::char::REPLACEMENT_CHARACTER
     #[inline(always)]
-    pub fn display(&self) -> &DisplayCStr {
-        unsafe { &*(self as *const Self as *const DisplayCStr) }
+    pub fn display(&self) -> &Display {
+        unsafe { &*(self as *const Self as *const Display) }
     }
 }
 
@@ -23,19 +23,19 @@ impl SSlice<i8, Null> {
     ///
     /// [`REPLACEMENT_CHARACTER`]: core::char::REPLACEMENT_CHARACTER
     #[inline(always)]
-    pub fn display(&self) -> &DisplayCStr {
+    pub fn display(&self) -> &Display {
         // SAFETY:
         //  We'll simply note that we are transmuting an [i8] slice int an [u8] slice. That
         //  transmutation is always safe.
-        unsafe { &*(self as *const Self as *const DisplayCStr) }
+        unsafe { &*(self as *const Self as *const Display) }
     }
 }
 
-/// Implements [`fmt::Display`] [`fmt::Debug`] for a [`CStr`].
+/// Implements [`fmt::Display`] [`fmt::Debug`] for an [`SSlice`].
 #[repr(transparent)]
-pub struct DisplayCStr(SSlice<u8, Null>);
+pub struct Display(SSlice<u8, Null>);
 
-impl fmt::Display for DisplayCStr {
+impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for opt in DecodeUtf8(self.0.iter().copied()) {
             f.write_char(opt.unwrap_or(char::REPLACEMENT_CHARACTER))?;
@@ -44,7 +44,7 @@ impl fmt::Display for DisplayCStr {
     }
 }
 
-impl fmt::Debug for DisplayCStr {
+impl fmt::Debug for Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("\"")?;
         for opt in DecodeUtf8(self.0.iter().copied()) {
