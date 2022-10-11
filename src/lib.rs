@@ -93,9 +93,7 @@ use core::panic::{RefUnwindSafe, UnwindSafe};
 mod sentinel;
 pub use self::sentinel::*;
 
-#[cfg(feature = "cstr")]
 mod null;
-#[cfg(feature = "cstr")]
 pub use self::null::*;
 
 mod iter;
@@ -125,11 +123,10 @@ extern "C" {
 
 /// A sentinel-terminated slice.
 #[repr(transparent)]
-pub struct SSlice<
-    T,
-    #[cfg(feature = "cstr")] S: Sentinel<T> = Null,
-    #[cfg(not(feature = "cstr"))] S: Sentinel<T>,
-> {
+pub struct SSlice<T, S = Null>
+where
+    S: Sentinel<T>,
+{
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
     _sentinel: PhantomData<fn() -> S>,
@@ -411,7 +408,6 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 }
 
-#[cfg(feature = "cstr")]
 impl SSlice<core::ffi::c_char> {
     /// Creates a new [`SSlice<T>`] from the provided standard [`core::ffi::CStr`].
     #[inline]
@@ -624,7 +620,6 @@ impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
 /// assert_eq!(s, b"Hello, World!");
 /// ```
 #[macro_export]
-#[cfg(feature = "cstr")]
 macro_rules! sslice {
     ($s:literal) => {
         unsafe { $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat!($s, "\0").as_ptr()) }

@@ -10,6 +10,7 @@ unsafe impl Sentinel<u8> for Null {
     }
 
     #[inline(always)]
+    #[cfg(feature = "memchr")]
     fn find_sentinel(slice: &[u8]) -> Option<usize> {
         memchr::memchr(0, slice)
     }
@@ -29,6 +30,7 @@ unsafe impl Sentinel<i8> for Null {
     }
 
     #[inline(always)]
+    #[cfg(feature = "memchr")]
     fn find_sentinel(slice: &[i8]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [i8] as *const [u8])) }
     }
@@ -48,6 +50,7 @@ unsafe impl Sentinel<bool> for Null {
     }
 
     #[inline(always)]
+    #[cfg(feature = "memchr")]
     fn find_sentinel(slice: &[bool]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [bool] as *const [u8])) }
     }

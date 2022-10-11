@@ -68,8 +68,7 @@ use self::__allocator_replacement::{AllocError, Allocator, Global};
 /// An allocated [`SSlice<T, S>`] instance.
 pub struct SBox<
     T,
-    #[cfg(all(feature = "cstr", feature = "alloc"))] S: Sentinel<T> = crate::Null,
-    #[cfg(not(all(feature = "cstr", feature = "alloc")))] S: Sentinel<T>,
+    S: Sentinel<T> = crate::Null,
     #[cfg(feature = "alloc")] A: Allocator = Global,
     #[cfg(not(feature = "alloc"))] A: Allocator,
 > {

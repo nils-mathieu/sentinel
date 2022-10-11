@@ -3,6 +3,8 @@ use core::fmt;
 use crate::{Iter, Null, SSlice, Utf8Error};
 
 /// A null-terminated UTF-8 string.
+///
+/// This type is designed to be used as a regular string slice (a.k.a. `str`), but null-terminated.
 pub struct CStr(crate::SSlice<u8, Null>);
 
 impl CStr {
