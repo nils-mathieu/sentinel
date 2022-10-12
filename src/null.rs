@@ -1,7 +1,7 @@
 use crate::{DefaultSentinel, Sentinel};
 
 /// A [`Sentinel`] implementation that is used as a default for every common type.
-pub struct Null;
+pub enum Null {}
 
 unsafe impl Sentinel<u8> for Null {
     #[inline(always)]
