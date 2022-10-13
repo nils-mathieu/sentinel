@@ -43,7 +43,6 @@ pub fn decode(state: &mut u32, code: &mut u32, new_byte: u8) {
 ///
 /// If it does, the length of the slice is returned (not including the terminating null character),
 /// as well as the number of code points.
-#[cfg(feature = "cstr")]
 pub fn verify(slice: &crate::SSlice<u8>) -> Result<(usize, usize), Utf8Error> {
     let mut count = 0;
     let mut len = 0;

@@ -104,13 +104,10 @@ mod sbox;
 #[cfg(any(feature = "nightly", feature = "alloc"))]
 pub use self::sbox::*;
 
-#[cfg(feature = "cstr")]
 mod display;
 mod index;
 
-#[cfg(feature = "cstr")]
 mod cstr;
-#[cfg(feature = "cstr")]
 pub use self::cstr::*;
 
 mod utf8;
