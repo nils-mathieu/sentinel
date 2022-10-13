@@ -57,11 +57,9 @@ Note that this type actually contains no data. Only references to this type can 
 
  - `alloc` - adds support for the `alloc` crate. This adds the [`SBox<T, S>`] type.
 
- - `cstr` - this feature enables the [`CStr`] type, as well as a generic [`Null`] which implements the [`Sentinel`] trait for common types (integers, pointers, Option<T>).
-
  - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of [`SSlice<T, S>`] can be created on the stack by making it [`!Sized`]. This feature also enables support for the new `allocator_api` unstable feature.
 
-*`null` and `alloc` are enabled by default.*
+*`alloc` is enabled by default.*
 
 # Old `sentinel` crate
 
