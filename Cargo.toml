@@ -12,14 +12,20 @@ readme = "readme.md"
 documentation = "https://docs.rs/sentinel"
 
 [features]
-default = ["alloc", "cstr", "memchr"]
+default = ["alloc", "memchr"]
 
+# Adds support for the `alloc` crate.
 alloc = []
-cstr = []
+
+# Adds support for nightly features such as `extern_types` and `allocator_api`.
 nightly = []
 
 [dependencies]
+# Use the `memchr` crate to look for a null byte in C-like strings.
 memchr = { version = "2", default-features = false, optional = true }
+
+# Use `libc`'s `strlen` to look for null characters.
+libc = { version = "0.2", default-features = false, optional = true }
 
 [package.metadata.cargo-all-features]
 skip_optional_dependencies = true

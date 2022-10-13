@@ -14,6 +14,12 @@ unsafe impl Sentinel<u8> for Null {
     fn find_sentinel(slice: &[u8]) -> Option<usize> {
         memchr::memchr(0, slice)
     }
+
+    #[cfg(feature = "libc")]
+    #[inline(always)]
+    unsafe fn find_sentinel_infinite(slice: *const u8) -> usize {
+        libc::strlen(slice as *const core::ffi::c_char) as usize
+    }
 }
 
 unsafe impl DefaultSentinel<u8> for Null {
@@ -34,6 +40,12 @@ unsafe impl Sentinel<i8> for Null {
     fn find_sentinel(slice: &[i8]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [i8] as *const [u8])) }
     }
+
+    #[cfg(feature = "libc")]
+    #[inline(always)]
+    unsafe fn find_sentinel_infinite(slice: *const i8) -> usize {
+        libc::strlen(slice as *const core::ffi::c_char) as usize
+    }
 }
 
 unsafe impl DefaultSentinel<i8> for Null {
@@ -53,6 +65,12 @@ unsafe impl Sentinel<bool> for Null {
     #[cfg(feature = "memchr")]
     fn find_sentinel(slice: &[bool]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [bool] as *const [u8])) }
+    }
+
+    #[cfg(feature = "libc")]
+    #[inline(always)]
+    unsafe fn find_sentinel_infinite(slice: *const bool) -> usize {
+        libc::strlen(slice as *const core::ffi::c_char) as usize
     }
 }
 
