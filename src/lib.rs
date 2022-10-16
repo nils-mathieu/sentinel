@@ -620,6 +620,15 @@ macro_rules! sslice {
     };
 }
 
+/// Creates a new [`CStr`] using a string literal. A null byte is automatically appended to that
+/// literal, ensuring the safety of the operation.
+#[macro_export]
+macro_rules! cstr {
+    ($s:literal) => {
+        unsafe { $crate::CStr::from_ptr(::core::concat!($s, "\0").as_ptr()) }
+    };
+}
+
 #[cfg(test)]
 #[test]
 fn from_slice() {
@@ -746,4 +755,11 @@ fn sslice_macro() {
 fn sslice_macro_empty() {
     let s = sslice!("");
     assert_eq!(s, b"");
+}
+
+#[cfg(test)]
+#[test]
+fn cstr_macro() {
+    let s = cstr!("test");
+    assert_eq!(s, "test");
 }

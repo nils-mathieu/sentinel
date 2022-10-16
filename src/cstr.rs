@@ -238,3 +238,26 @@ impl fmt::Display for CStr {
         fmt::Display::fmt(self.as_str(), f)
     }
 }
+
+impl PartialEq<str> for CStr {
+    #[inline]
+    fn eq(&self, other: &str) -> bool {
+        self.0.iter().copied().eq(other.bytes())
+    }
+}
+
+impl PartialEq<CStr> for str {
+    #[inline]
+    fn eq(&self, other: &CStr) -> bool {
+        self.bytes().eq(other.0.iter().copied())
+    }
+}
+
+impl PartialEq for CStr {
+    #[inline]
+    fn eq(&self, other: &CStr) -> bool {
+        self.0.iter().eq(other.0.iter())
+    }
+}
+
+impl Eq for CStr {}
