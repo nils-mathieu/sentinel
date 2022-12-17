@@ -15,6 +15,8 @@ use alloc::alloc::Global;
 
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
+#[cfg(all(feature = "alloc", feature = "nightly"))]
+use alloc::vec::Vec;
 
 #[cfg(not(feature = "nightly"))]
 mod __allocator_replacement {
@@ -68,15 +70,15 @@ use self::__allocator_replacement::{AllocError, Allocator, Global};
 /// An allocated [`SSlice<T, S>`] instance.
 pub struct SBox<
     T,
-    S: Sentinel<T> = crate::Null,
     #[cfg(feature = "alloc")] A: Allocator = Global,
     #[cfg(not(feature = "alloc"))] A: Allocator,
+    S: Sentinel<T> = crate::Null,
 > {
     data: NonNull<SSlice<T, S>>,
     allocator: A,
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
     /// Clones the content of `slice` into a [`SBox<T, S>`].
     #[inline]
     pub fn from_sslice_in(slice: &SSlice<T, S>, allocator: A) -> Result<Self, AllocError>
@@ -144,7 +146,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     ///
     /// [`from_raw_parts`]: SBox::from_raw_parts
     #[inline(always)]
-    pub fn into_raw_parts(b: SBox<T, S, A>) -> (*mut T, A) {
+    pub fn into_raw_parts(b: SBox<T, A, S>) -> (*mut T, A) {
         let mut b = ManuallyDrop::new(b);
         unsafe { (b.as_mut_ptr(), core::ptr::read(&b.allocator)) }
     }
@@ -168,7 +170,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     /// ## Safety
     ///
     /// The last element of the slice must be a sentinel, and other elements must not.
-    #[cfg(feature = "nightly")]
+    #[cfg(all(feature = "nightly", feature = "alloc"))]
     pub unsafe fn from_box_unchecked(b: Box<[T], A>) -> Self {
         let (data, allocator) = Box::into_raw_with_allocator(b);
         Self::from_raw_parts(data as *mut T, allocator)
@@ -178,7 +180,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     ///
     /// If the box does not end with a sentinel value, or if it contains a sentinel value in
     /// non-ending position, [`None`] is returned.
-    #[cfg(feature = "nightly")]
+    #[cfg(all(feature = "nightly", feature = "alloc"))]
     pub fn from_box(b: Box<[T], A>) -> Option<Self> {
         if S::find_sentinel(&b) == Some(b.len().wrapping_sub(1)) {
             Some(unsafe { Self::from_box_unchecked(b) })
@@ -189,13 +191,13 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
 
     /// Creates a new [`SBox<T>`] from the values returned by the provided iterator. If a sentinel
     /// value is returned, it is ignored.
-    #[cfg(feature = "nightly")]
+    #[cfg(all(feature = "nightly", feature = "alloc"))]
     pub fn from_iter_in(iter: impl IntoIterator<Item = T>, allocator: A) -> Result<Self, AllocError>
     where
         S: DefaultSentinel<T>,
     {
         let iter = iter.into_iter();
-        let mut vec = alloc::vec::Vec::with_capacity_in(iter.size_hint().0, allocator);
+        let mut vec = Vec::with_capacity_in(iter.size_hint().0, allocator);
 
         for elem in iter {
             if S::is_sentinel(&elem) {
@@ -211,7 +213,7 @@ impl<T, S: Sentinel<T>, A: Allocator> SBox<T, S, A> {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(all(feature = "nightly", feature = "alloc"))]
 fn try_push<T, A: Allocator>(v: &mut Vec<T, A>, val: T) -> Result<(), AllocError> {
     v.try_reserve(1).map_err(|_| AllocError)?;
     unsafe {
@@ -223,7 +225,7 @@ fn try_push<T, A: Allocator>(v: &mut Vec<T, A>, val: T) -> Result<(), AllocError
 }
 
 #[cfg(feature = "alloc")]
-impl<T, S: Sentinel<T>> SBox<T, S> {
+impl<T, S: Sentinel<T>> SBox<T, Global, S> {
     /// Clones the content of `slice` into a [`SBox<T, S>`].
     #[inline(always)]
     pub fn from_sslice(slice: &SSlice<T, S>) -> Result<Self, AllocError>
@@ -271,11 +273,11 @@ impl<T, S: Sentinel<T>> SBox<T, S> {
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> Drop for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> Drop for SBox<T, A, S> {
     #[inline(always)]
     fn drop(&mut self) {
         struct DropGuard<'a, T, S: Sentinel<T>, A: Allocator> {
-            b: &'a mut SBox<T, S, A>,
+            b: &'a mut SBox<T, A, S>,
         }
 
         impl<'a, T, S: Sentinel<T>, A: Allocator> Drop for DropGuard<'a, T, S, A> {
@@ -299,7 +301,8 @@ impl<T, S: Sentinel<T>, A: Allocator> Drop for SBox<T, S, A> {
     }
 }
 
-impl<T, S: DefaultSentinel<T> + Sentinel<T>> FromIterator<T> for SBox<T, S> {
+#[cfg(feature = "alloc")]
+impl<T, S: DefaultSentinel<T> + Sentinel<T>> FromIterator<T> for SBox<T, Global, S> {
     /// Creates a new [`SBox<T>`] from the values returned by the provided iterator. If a sentinel
     /// value is returned, it is ignored.
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -313,7 +316,7 @@ impl<T, S: DefaultSentinel<T> + Sentinel<T>> FromIterator<T> for SBox<T, S> {
     }
 }
 
-impl<T, S, A> Clone for SBox<T, S, A>
+impl<T, A, S> Clone for SBox<T, A, S>
 where
     T: Clone,
     S: Sentinel<T>,
@@ -324,7 +327,7 @@ where
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> Deref for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> Deref for SBox<T, A, S> {
     type Target = SSlice<T, S>;
 
     #[inline(always)]
@@ -333,42 +336,42 @@ impl<T, S: Sentinel<T>, A: Allocator> Deref for SBox<T, S, A> {
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> DerefMut for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> DerefMut for SBox<T, A, S> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.data.as_ptr() }
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> AsRef<SSlice<T, S>> for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> AsRef<SSlice<T, S>> for SBox<T, A, S> {
     #[inline(always)]
     fn as_ref(&self) -> &SSlice<T, S> {
         self
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> AsMut<SSlice<T, S>> for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> AsMut<SSlice<T, S>> for SBox<T, A, S> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut SSlice<T, S> {
         self
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> Borrow<SSlice<T, S>> for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> Borrow<SSlice<T, S>> for SBox<T, A, S> {
     #[inline(always)]
     fn borrow(&self) -> &SSlice<T, S> {
         self
     }
 }
 
-impl<T, S: Sentinel<T>, A: Allocator> BorrowMut<SSlice<T, S>> for SBox<T, S, A> {
+impl<T, A: Allocator, S: Sentinel<T>> BorrowMut<SSlice<T, S>> for SBox<T, A, S> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut SSlice<T, S> {
         self
     }
 }
 
-impl<T, S, U, A> PartialEq<U> for SBox<T, S, A>
+impl<T, U, A, S> PartialEq<U> for SBox<T, A, S>
 where
     A: Allocator,
     S: Sentinel<T>,
@@ -380,7 +383,7 @@ where
     }
 }
 
-impl<T, S, T2, S2, A> PartialEq<SBox<T, S, A>> for SSlice<T2, S2>
+impl<T, S, T2, S2, A> PartialEq<SBox<T, A, S>> for SSlice<T2, S2>
 where
     S: Sentinel<T>,
     S2: Sentinel<T2>,
@@ -388,36 +391,36 @@ where
     T2: PartialEq<T>,
 {
     #[inline(always)]
-    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+    fn eq(&self, other: &SBox<T, A, S>) -> bool {
         self == other.as_ref()
     }
 }
 
-impl<T, S, T2, A> PartialEq<SBox<T, S, A>> for [T2]
+impl<T, S, T2, A> PartialEq<SBox<T, A, S>> for [T2]
 where
     S: Sentinel<T>,
     A: Allocator,
     T2: PartialEq<T>,
 {
     #[inline(always)]
-    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+    fn eq(&self, other: &SBox<T, A, S>) -> bool {
         self == other.as_ref()
     }
 }
 
-impl<T, S, T2, A, const N: usize> PartialEq<SBox<T, S, A>> for [T2; N]
+impl<T, S, T2, A, const N: usize> PartialEq<SBox<T, A, S>> for [T2; N]
 where
     S: Sentinel<T>,
     A: Allocator,
     T2: PartialEq<T>,
 {
     #[inline(always)]
-    fn eq(&self, other: &SBox<T, S, A>) -> bool {
+    fn eq(&self, other: &SBox<T, A, S>) -> bool {
         self == other.as_ref()
     }
 }
 
-impl<T, S, A> Eq for SBox<T, S, A>
+impl<T, S, A> Eq for SBox<T, A, S>
 where
     A: Allocator,
     S: Sentinel<T>,
@@ -425,7 +428,7 @@ where
 {
 }
 
-impl<T, S, U, A> PartialOrd<U> for SBox<T, S, A>
+impl<T, S, U, A> PartialOrd<U> for SBox<T, A, S>
 where
     A: Allocator,
     S: Sentinel<T>,
@@ -437,7 +440,7 @@ where
     }
 }
 
-impl<T, S, T2, S2, A> PartialOrd<SBox<T, S, A>> for SSlice<T2, S2>
+impl<T, S, T2, S2, A> PartialOrd<SBox<T, A, S>> for SSlice<T2, S2>
 where
     S: Sentinel<T>,
     S2: Sentinel<T2>,
@@ -445,36 +448,36 @@ where
     T2: PartialOrd<T>,
 {
     #[inline(always)]
-    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SBox<T, A, S>) -> Option<Ordering> {
         self.partial_cmp(other.as_ref())
     }
 }
 
-impl<T, S, T2, A> PartialOrd<SBox<T, S, A>> for [T2]
+impl<T, S, T2, A> PartialOrd<SBox<T, A, S>> for [T2]
 where
     S: Sentinel<T>,
     A: Allocator,
     T2: PartialOrd<T>,
 {
     #[inline(always)]
-    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SBox<T, A, S>) -> Option<Ordering> {
         self.partial_cmp(other.as_ref())
     }
 }
 
-impl<T, S, T2, A, const N: usize> PartialOrd<SBox<T, S, A>> for [T2; N]
+impl<T, S, T2, A, const N: usize> PartialOrd<SBox<T, A, S>> for [T2; N]
 where
     S: Sentinel<T>,
     A: Allocator,
     T2: PartialOrd<T>,
 {
     #[inline(always)]
-    fn partial_cmp(&self, other: &SBox<T, S, A>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SBox<T, A, S>) -> Option<Ordering> {
         self.partial_cmp(other.as_ref())
     }
 }
 
-impl<T, S, A> Ord for SBox<T, S, A>
+impl<T, S, A> Ord for SBox<T, A, S>
 where
     A: Allocator,
     S: Sentinel<T>,
