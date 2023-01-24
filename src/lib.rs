@@ -141,7 +141,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     ///
     /// This invalid must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
-    pub unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
+    pub const unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
         // SAFETY:
         //  The caller must ensure that the invariants of `SSlice` are upheld.
         unsafe { &*(ptr as *const Self) }
@@ -788,6 +788,22 @@ macro_rules! sslice {
     };
 }
 
+/// Creates a new [`SSlice<u8>`] using a string literal. A null byte is automatically appended at
+/// the end of that literal, ensuring the safety of the operation.
+///
+/// # Examples
+///
+/// ```
+/// let s = sentinel::sslice!("Hello, World!");
+/// assert_eq!(s, b"Hello, World!");
+/// ```
+#[macro_export]
+macro_rules! sslice {
+    ($s:literal) => {
+        unsafe { $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat!($s, "\0").as_ptr()) }
+    };
+}
+
 /// Creates a new [`CStr`] using a string literal. A null byte is automatically appended to that
 /// literal, ensuring the safety of the operation.
 #[macro_export]
@@ -924,6 +940,20 @@ fn sslice_macro() {
 #[test]
 fn sslice_macro_empty() {
     let s = sslice!(b"");
+    assert_eq!(s, b"");
+}
+
+#[cfg(test)]
+#[test]
+fn sslice_macro() {
+    let s = sslice!("test");
+    assert_eq!(s, b"test");
+}
+
+#[cfg(test)]
+#[test]
+fn sslice_macro_empty() {
+    let s = sslice!("");
     assert_eq!(s, b"");
 }
 

@@ -46,7 +46,7 @@ pub unsafe trait Sentinel<T> {
 ///
 /// The `unwrap_unchecked` function must be safe to call with any non-sentinel value.
 pub unsafe trait UnwrapSentinel<T>: Sentinel<T> {
-    /// The output of the [`unwrap_unchecked`] operation.
+    /// The output of the [`unwrap_unchecked`](UnwrapSentinel::unwrap_unchecked) operation.
     type Output;
 
     /// Unwraps the provided value.
