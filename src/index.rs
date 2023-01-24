@@ -9,14 +9,14 @@ pub trait SliceIndex<T, S: Sentinel<T>> {
 
     /// Indexes into `slice` without checking the bounds.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `self` must be in bounds.
     unsafe fn index_unchecked(self, slice: &SSlice<T, S>) -> &Self::Output;
 
     /// Indexes into `slice` without checking the bounds.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `self` must be in bounds.
     unsafe fn index_unchecked_mut(self, slice: &mut SSlice<T, S>) -> &mut Self::Output;

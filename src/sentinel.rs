@@ -1,6 +1,6 @@
 /// Indicates a sentinel value for the type `T`.
 ///
-/// ## Safety
+/// # Safety
 ///
 /// The associated [`is_sentinel`] method must be pure. For any given input, it must either always
 /// return `true`, or always return `false`.
@@ -18,7 +18,7 @@ pub unsafe trait Sentinel<T> {
 
     /// Returns the index of the first sentinel value referenced by the provided pointer.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// A sentinel value must exist in the allocated object referenced by the pointer. Every
     /// element up to (and including) the sentinel, must be initialized and valid for reads.
@@ -73,7 +73,7 @@ pub unsafe trait UnwrapSentinel<T>: Sentinel<T> {
 
 /// A sub-trait of [`Sentinel`] that defines a "default" sentinel value.
 ///
-/// ## Safety
+/// # Safety
 ///
 /// [`default_sentinel`] must return an instance of `T` that causes [`is_sentinel`] to return
 /// `true`.

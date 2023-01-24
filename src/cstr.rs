@@ -10,7 +10,7 @@ pub struct CStr(crate::SSlice<u8, Null>);
 impl CStr {
     /// Creates a new [`CStr`] from the provided pointer.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `p` must reference valid UTF-8 data until the first null byte. Those bytes must remain
     /// shared for the lifetime `'a`.
@@ -21,7 +21,7 @@ impl CStr {
 
     /// Creates a new [`CStr`] from the provided pointer.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `p` must reference value UTF-8 data until the first null byte. Those bytes must remain
     /// exclusive to the produced instance for the lifetime `'a`.
@@ -32,7 +32,7 @@ impl CStr {
 
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The provided slice must reference valid `UTF-8` data.
     #[inline(always)]
@@ -42,7 +42,7 @@ impl CStr {
 
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The provided slice must reference valid `UTF-8` data.
     #[inline(always)]
@@ -114,7 +114,7 @@ impl CStr {
 
     /// Returns a reference to the underlying [`SSlice<u8, Null>`] instance.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The bytes owned by the [`CStr`] must remain valid UTF-8.
     #[inline(always)]
@@ -130,7 +130,7 @@ impl CStr {
 
     /// Returns an iterator over the bytes of the [`CStr`].
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The bytes owned by the [`CStr`] must remain valid UTF-8.
     #[inline(always)]

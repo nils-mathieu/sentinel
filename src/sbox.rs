@@ -90,7 +90,7 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
 
     /// Creates a new [`SBox<T, S>`] from the provided slice.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `slice` must end with a sentinel value. Apart from this one, it must contain no sentinel
     /// values.
@@ -155,7 +155,7 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
 
     /// Constructs a new [`SBox<T, S>`] using the provided data pointer and allocator.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The provided pointer must reference the first element of a [`SSlice<T, S>`] instance
     /// allocated by `allocator`.
@@ -169,7 +169,7 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
 
     /// Creates an [`SBox<T>`] from the provided allocated box.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The last element of the slice must be a sentinel, and other elements must not.
     #[cfg(all(feature = "nightly", feature = "alloc"))]
@@ -252,7 +252,7 @@ impl<T, S: Sentinel<T>> SBox<T, Global, S> {
 
     /// Creates a [`SBox<T>`] from the provided allocated box.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The last element of the slice must be a sentinel, and other elements must not.
     #[cfg(not(feature = "nightly"))]
@@ -501,7 +501,7 @@ struct RawBox<T, A: Allocator> {
 impl<T, A: Allocator> RawBox<T, A> {
     /// Allocates a new [`RawBox<T, A>`] of the given size.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `size * size_of::<T>` must not overflow `isize::MAX`.
     pub unsafe fn new_unchecked_in(size: usize, allocator: A) -> Result<Self, AllocError> {

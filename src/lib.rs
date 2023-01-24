@@ -77,6 +77,7 @@
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
+#![cfg_attr(feature = "nightly", feature(concat_bytes))]
 #![forbid(unsafe_op_in_unsafe_fn)]
 
 #[cfg(feature = "alloc")]
@@ -133,7 +134,7 @@ where
 impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Creates a new [`SSlice<T>`] instance from the provided pointer.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The elements referenced by the provided pointer, until the first sentinel value, must be
     /// part of the same allocated object. They must be properly initialized and safe for reads.
@@ -148,7 +149,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Creates a new [`SSlice<T>`] instance from the provided pointer.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// The elements referenced by the provided pointer, until the first sentinel value, must be
     /// part of the same allocated object. They must be properly initialized and safe for reads
@@ -169,6 +170,17 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// character. The remaining of the slice is returned as well.
     ///
     /// Otherwise, the function returns [`None`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let input = b"abc\0def";
+    /// let (a, b) = SSlice::<u8>::from_slice_split(input).unwrap();
+    /// assert_eq!(a, b"abc");
+    /// assert_eq!(b, b"def");
+    /// ```
     #[inline]
     pub fn from_slice_split(slice: &[T]) -> Option<(&Self, &[T])> {
         let idx = S::find_sentinel(slice)?;
@@ -189,6 +201,15 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// If the slice contains a sentinel character, the function returns [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. Otherwise, the function returns [`None`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let sslice = SSlice::<u8>::from_slice(b"abc\0def").unwrap();
+    /// assert_eq!(sslice, b"abc");
+    /// ```
     #[inline]
     pub fn from_slice(slice: &[T]) -> Option<&Self> {
         if S::find_sentinel(slice).is_some() {
@@ -205,6 +226,18 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// character. The remaining of the slice is returned as well.
     ///
     /// Otherwise, the function returns [`None`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let mut slice = [1, 2, 3, 0, 4, 5, 6];
+    /// let (sslice, remainder) = SSlice::<u8>::from_slice_split_mut(&mut slice).unwrap();
+    ///
+    /// assert_eq!(sslice, &[1, 2, 3]);
+    /// assert_eq!(remainder, [4, 5, 6]);
+    /// ```
     #[inline]
     pub fn from_slice_split_mut(slice: &mut [T]) -> Option<(&mut Self, &mut [T])> {
         let idx = S::find_sentinel(slice)?;
@@ -225,6 +258,17 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// If the slice contains a sentinel character, the function returns [`SSlice<T, S>`]
     /// referencing the elements stored in `T` up to (and including) the first sentinel
     /// character. Otherwise, the function returns [`None`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let mut slice = [1, 2, 3, 0, 4, 5, 6];
+    /// let sslice = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
+    ///
+    /// assert_eq!(sslice, &[1, 2, 3]);
+    /// ```
     #[inline]
     pub fn from_slice_mut(slice: &mut [T]) -> Option<&mut Self> {
         if S::find_sentinel(slice).is_some() {
@@ -235,24 +279,65 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 
     /// Returns a pointer to the first element that is part of the slice.
+    ///
+    /// # Notes
+    ///
+    /// This pointer is always valid and *will* reference an initialized instance of `T`. Note,
+    /// however, that this value cannot be modified (even if it supports interior mutability). Or,
+    /// rather, if it is a sentinel, it must remain a sentinel.
     #[inline(always)]
     pub fn as_ptr(&self) -> *const T {
         self as *const Self as *const T
     }
 
     /// Returns a pointer to the first element that is part of the slice.
+    ///
+    /// # Notes
+    ///
+    /// This pointer is always valid and *will* reference an initialized instance of `T`. Note,
+    /// however, that this value cannot be modified. Or, rather, if it is a sentinel, it must
+    /// remain a sentinel.
     #[inline(always)]
     pub fn as_mut_ptr(&mut self) -> *mut T {
         self as *mut Self as *mut T
     }
 
     /// Returns an iterator over the elements of the slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let sslice = sentinel::cstr!("Hello!").as_sslice();
+    /// let mut iter = sslice.iter();
+    ///
+    /// assert_eq!(iter.next(), Some(&b'H'));
+    /// assert_eq!(iter.next(), Some(&b'e'));
+    /// assert_eq!(iter.next(), Some(&b'l'));
+    /// assert_eq!(iter.next(), Some(&b'l'));
+    /// assert_eq!(iter.next(), Some(&b'o'));
+    /// assert_eq!(iter.next(), Some(&b'!'));
+    /// assert_eq!(iter.next(), None);
+    /// ```
     #[inline(always)]
     pub fn iter(&self) -> &Iter<T, S> {
         Iter::new_ref(self)
     }
 
     /// Returns an iterator over the elements of the slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut array = *b"abc\0";
+    /// let mut sslice = sentinel::SSlice::<u8>::from_slice_mut(&mut array).unwrap();
+    /// let mut iter = sslice.iter_mut();
+    ///
+    /// *iter.next().unwrap() = b'1';
+    /// *iter.next().unwrap() = b'2';
+    /// *iter.next().unwrap() = b'3';
+    ///
+    /// assert_eq!(sslice, b"123");
+    /// ```
     #[inline(always)]
     pub fn iter_mut(&mut self) -> &mut Iter<T, S> {
         Iter::new_mut(self)
@@ -260,7 +345,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Indexes into this [`SSlice<T, S>`] instance without checking the bounds.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `index` must be in bounds.
     #[inline(always)]
@@ -273,7 +358,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Indexes into this [`SSlice<T, S>`] instance without checking the bounds.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `index` must be in bounds.
     #[inline(always)]
@@ -286,6 +371,15 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Returns the length of the [`SSlice<T, S>`]. This is the number of elements referenced by
     /// that instance, not including the terminating sentinel character.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let sslice = SSlice::<u8>::from_slice(b"Hello\0World").unwrap();
+    /// assert_eq!(sslice.len(), 5);
+    /// ```
     #[inline(always)]
     pub fn len(&self) -> usize {
         // SAFETY:
@@ -294,6 +388,15 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 
     /// Returns whether the slice is currently empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// assert!(!SSlice::<u8>::from_slice(b"123\0").unwrap().is_empty());
+    /// assert!(SSlice::<u8>::from_slice(b"\0").unwrap().is_empty());
+    /// ```
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
         // SAFETY:
@@ -302,43 +405,90 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 
     /// Returns the first element of the slice, or [`None`] if it is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// assert_eq!(SSlice::<u8>::from_slice(b"123\0").unwrap().first(), Some(&b'1'));
+    /// assert_eq!(SSlice::<u8>::from_slice(b"\0").unwrap().first(), None);
+    /// ```
     #[inline]
     pub fn first(&self) -> Option<&T> {
-        unsafe {
-            if S::is_sentinel(&*self.as_ptr()) {
-                None
-            } else {
-                Some(&*self.as_ptr())
-            }
+        if self.is_empty() {
+            None
+        } else {
+            // SAFETY:
+            //  This value is not a sentinel, we can safely mutate it.
+            Some(unsafe { self.raw_first() })
         }
     }
 
     /// Returns the first element of the slice, or [`None`] if it is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let mut array = [1, 2, 3, 0];
+    /// let mut sslice = SSlice::<u8>::from_slice_mut(&mut array).unwrap();
+    ///
+    /// *sslice.first_mut().unwrap() = 0;
+    ///
+    /// assert_eq!(sslice.first_mut(), None);
+    /// ```
     #[inline]
     pub fn first_mut(&mut self) -> Option<&mut T> {
-        unsafe {
-            if S::is_sentinel(&*self.as_ptr()) {
-                None
-            } else {
-                Some(&mut *self.as_mut_ptr())
-            }
+        if self.is_empty() {
+            None
+        } else {
+            // SAFETY:
+            //  We know that this value is not a sentinel. We can safely mutate it.
+            Some(unsafe { self.raw_first_mut() })
         }
     }
 
     /// Returns a pointer to the first element of the slice, and a slice to the remaining elements.
     /// [`None`] is returned if the slice is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let sslice = SSlice::<u8>::from_slice(b"1234\0").unwrap();
+    /// let (first, remainder) = sslice.split_first().unwrap();
+    /// assert_eq!(*first, '1' as u8);
+    /// assert_eq!(remainder, b"234");
+    /// ```
     pub fn split_first(&self) -> Option<(&T, &Self)> {
-        unsafe {
-            if S::is_sentinel(&*self.as_ptr()) {
-                None
-            } else {
-                Some((&*self.as_ptr(), SSlice::from_ptr(self.as_ptr().add(1))))
-            }
+        if self.is_empty() {
+            None
+        } else {
+            Some(unsafe { (&*self.as_ptr(), SSlice::from_ptr(self.as_ptr().add(1))) })
         }
     }
 
     /// Returns a pointer to the first element of the slice, and a slice to the remaining elements.
     /// [`None`] is returned if the slice is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sentinel::SSlice;
+    ///
+    /// let mut array = *b"1234\0";
+    /// let mut sslice = SSlice::<u8>::from_slice_mut(&mut array).unwrap();
+    /// let (first, remainder) = sslice.split_first_mut().unwrap();
+    /// assert_eq!(*first, '1' as u8);
+    /// assert_eq!(remainder, b"234");
+    ///
+    /// *first = 0;
+    ///
+    /// assert!(sslice.is_empty());
+    /// ```
     pub fn split_first_mut(&mut self) -> Option<(&mut T, &mut Self)> {
         unsafe {
             if S::is_sentinel(&*self.as_ptr()) {
@@ -355,7 +505,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Returns a shared reference to the first element of the slice, or a sentinel
     /// value if the slice is empty.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// If the returned value is a sentinel, it must not be modified (or rather, it must remain
     /// a sentinel).
@@ -369,7 +519,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Returns an exclusive reference to the first element of the slice, or a sentinel value if
     /// the slice is empty.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// If the returned value is a sentinel, it must not be modified (or rather, it must remain
     /// a sentinel).
@@ -382,6 +532,8 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
 
     /// Returns a slice referencing every element of this [`SSlice<T, S>`], not including the
     /// terminating sentinel character.
+    ///
+    ///
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         let len = self.len();
@@ -621,13 +773,18 @@ impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
 /// # Examples
 ///
 /// ```
-/// let s = sentinel::sslice!("Hello, World!");
+/// # #![feature(concat_bytes)]
+///
+/// let s = sentinel::sslice!(b"Hello, World!");
 /// assert_eq!(s, b"Hello, World!");
 /// ```
 #[macro_export]
+#[cfg(feature = "nightly")]
 macro_rules! sslice {
     ($s:literal) => {
-        unsafe { $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat!($s, "\0").as_ptr()) }
+        unsafe {
+            $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat_bytes!($s, b'\0').as_ptr())
+        }
     };
 }
 
@@ -755,16 +912,18 @@ fn as_slice() {
 }
 
 #[cfg(test)]
+#[cfg(feature = "nightly")]
 #[test]
 fn sslice_macro() {
-    let s = sslice!("test");
+    let s = sslice!(b"test");
     assert_eq!(s, b"test");
 }
 
 #[cfg(test)]
+#[cfg(feature = "nightly")]
 #[test]
 fn sslice_macro_empty() {
-    let s = sslice!("");
+    let s = sslice!(b"");
     assert_eq!(s, b"");
 }
 
@@ -773,4 +932,11 @@ fn sslice_macro_empty() {
 fn cstr_macro() {
     let s = cstr!("test");
     assert_eq!(s, "test");
+}
+
+#[cfg(test)]
+#[test]
+fn cstr_macro_empty() {
+    let s = cstr!("");
+    assert_eq!(s, "");
 }
