@@ -77,6 +77,7 @@
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
+#![forbid(unsafe_op_in_unsafe_fn)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -140,7 +141,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// This invalid must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
     pub unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
-        &*(ptr as *const Self)
+        // SAFETY:
+        //  The caller must ensure that the invariants of `SSlice` are upheld.
+        unsafe { &*(ptr as *const Self) }
     }
 
     /// Creates a new [`SSlice<T>`] instance from the provided pointer.
@@ -154,7 +157,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// This invalid must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
     pub unsafe fn from_mut_ptr<'a>(ptr: *mut T) -> &'a mut Self {
-        &mut *(ptr as *mut Self)
+        // SAFETY:
+        //  The caller must ensure that the invariants of `SSlice` are upheld.
+        unsafe { &mut *(ptr as *mut Self) }
     }
 
     /// Creates a [`SSlice<T, S>`] instance from the provided slice.
@@ -263,7 +268,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     where
         Idx: self::index::SliceIndex<T, S>,
     {
-        index.index_unchecked(self)
+        unsafe { index.index_unchecked(self) }
     }
 
     /// Indexes into this [`SSlice<T, S>`] instance without checking the bounds.
@@ -276,14 +281,14 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     where
         Idx: self::index::SliceIndex<T, S>,
     {
-        index.index_unchecked_mut(self)
+        unsafe { index.index_unchecked_mut(self) }
     }
 
     /// Returns the length of the [`SSlice<T, S>`]. This is the number of elements referenced by
     /// that instance, not including the terminating sentinel character.
     #[inline(always)]
     pub fn len(&self) -> usize {
-        // Safety:
+        // SAFETY:
         //  This is safe by invariant of `SSlice<T, S>`.
         unsafe { S::find_sentinel_infinite(self.as_ptr()) }
     }
@@ -291,7 +296,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// Returns whether the slice is currently empty.
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        unsafe { S::is_sentinel(&*self.as_ptr()) }
+        // SAFETY:
+        //  We're not modifying the underlying value.
+        S::is_sentinel(unsafe { self.raw_first() })
     }
 
     /// Returns the first element of the slice, or [`None`] if it is empty.
@@ -354,7 +361,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// a sentinel).
     #[inline(always)]
     pub unsafe fn raw_first(&self) -> &T {
-        &*self.as_ptr()
+        // SAFETY:
+        //  The first element of an `SSlice<T>` is always exists.
+        unsafe { &*self.as_ptr() }
     }
 
     /// Returns an exclusive reference to the first element of the slice, or a sentinel value if
@@ -366,7 +375,9 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// a sentinel).
     #[inline(always)]
     pub unsafe fn raw_first_mut(&mut self) -> &mut T {
-        &mut *self.as_mut_ptr()
+        // SAFETY:
+        //  The first element of an `SSlice<T>` is always exists.
+        unsafe { &mut *self.as_mut_ptr() }
     }
 
     /// Returns a slice referencing every element of this [`SSlice<T, S>`], not including the

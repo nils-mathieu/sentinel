@@ -50,7 +50,7 @@ mod __allocator_replacement {
 
         #[inline(always)]
         unsafe fn deallocate(&self, data: NonNull<u8>, layout: Layout) {
-            alloc::alloc::dealloc(data.as_ptr(), layout)
+            unsafe { alloc::alloc::dealloc(data.as_ptr(), layout) }
         }
     }
 
@@ -98,11 +98,13 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
     where
         T: Clone,
     {
-        let mut raw_box = RawBox::new_unchecked_in(slice.len(), allocator)?;
-        init_slice(raw_box.as_slice_mut(), |i| slice.get_unchecked(i).clone());
+        let mut raw_box = unsafe { RawBox::new_unchecked_in(slice.len(), allocator)? };
+        init_slice(raw_box.as_slice_mut(), |i| unsafe {
+            slice.get_unchecked(i).clone()
+        });
         let (data, _size, allocator) = raw_box.into_raw_parts();
         Ok(Self {
-            data: NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>),
+            data: unsafe { NonNull::new_unchecked(data.as_ptr() as *mut SSlice<T, S>) },
             allocator,
         })
     }
@@ -160,7 +162,7 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
     #[inline(always)]
     pub unsafe fn from_raw_parts(data: *mut T, allocator: A) -> Self {
         Self {
-            data: NonNull::new_unchecked(data as *mut SSlice<T, S>),
+            data: unsafe { NonNull::new_unchecked(data as *mut SSlice<T, S>) },
             allocator,
         }
     }
@@ -173,7 +175,7 @@ impl<T, A: Allocator, S: Sentinel<T>> SBox<T, A, S> {
     #[cfg(all(feature = "nightly", feature = "alloc"))]
     pub unsafe fn from_box_unchecked(b: Box<[T], A>) -> Self {
         let (data, allocator) = Box::into_raw_with_allocator(b);
-        Self::from_raw_parts(data as *mut T, allocator)
+        unsafe { Self::from_raw_parts(data as *mut T, allocator) }
     }
 
     /// Creates an [`SBox<T>`] from the provided allocated box.
@@ -256,7 +258,7 @@ impl<T, S: Sentinel<T>> SBox<T, Global, S> {
     #[cfg(not(feature = "nightly"))]
     pub unsafe fn from_box_unchecked(b: Box<[T]>) -> Self {
         let data = Box::into_raw(b);
-        Self::from_raw_parts(data as *mut T, Global)
+        unsafe { Self::from_raw_parts(data as *mut T, Global) }
     }
 
     /// Creates an [`SBox<T>`] from the provided allocated box.
@@ -503,8 +505,9 @@ impl<T, A: Allocator> RawBox<T, A> {
     ///
     /// `size * size_of::<T>` must not overflow `isize::MAX`.
     pub unsafe fn new_unchecked_in(size: usize, allocator: A) -> Result<Self, AllocError> {
-        let layout =
-            Layout::from_size_align_unchecked(size.wrapping_mul(size_of::<T>()), align_of::<T>());
+        let layout = unsafe {
+            Layout::from_size_align_unchecked(size.wrapping_mul(size_of::<T>()), align_of::<T>())
+        };
 
         Ok(Self {
             data: allocator.allocate(layout)?.cast(),

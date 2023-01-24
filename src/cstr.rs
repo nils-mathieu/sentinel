@@ -16,7 +16,7 @@ impl CStr {
     /// shared for the lifetime `'a`.
     #[inline(always)]
     pub const unsafe fn from_ptr<'a>(p: *const u8) -> &'a Self {
-        &*(p as *const Self)
+        unsafe { &*(p as *const Self) }
     }
 
     /// Creates a new [`CStr`] from the provided pointer.
@@ -27,7 +27,7 @@ impl CStr {
     /// exclusive to the produced instance for the lifetime `'a`.
     #[inline(always)]
     pub unsafe fn from_mut_ptr<'a>(p: *mut u8) -> &'a mut Self {
-        &mut *(p as *mut Self)
+        unsafe { &mut *(p as *mut Self) }
     }
 
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
@@ -37,7 +37,7 @@ impl CStr {
     /// The provided slice must reference valid `UTF-8` data.
     #[inline(always)]
     pub const unsafe fn from_sslice_unchecked(sslice: &SSlice<u8, Null>) -> &Self {
-        &*(sslice as *const _ as *const Self)
+        unsafe { &*(sslice as *const _ as *const Self) }
     }
 
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.
@@ -47,7 +47,7 @@ impl CStr {
     /// The provided slice must reference valid `UTF-8` data.
     #[inline(always)]
     pub unsafe fn from_sslice_unchecked_mut(sslice: &mut SSlice<u8, Null>) -> &mut Self {
-        &mut *(sslice as *mut _ as *mut Self)
+        unsafe { &mut *(sslice as *mut _ as *mut Self) }
     }
 
     /// Creates a new [`CStr`] from the provided `SSlice<u8>`.

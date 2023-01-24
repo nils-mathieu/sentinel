@@ -18,7 +18,7 @@ unsafe impl Sentinel<u8> for Null {
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const u8) -> usize {
-        libc::strlen(slice as *const core::ffi::c_char) as usize
+        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
     }
 }
 
@@ -34,7 +34,7 @@ unsafe impl UnwrapSentinel<u8> for Null {
 
     #[inline(always)]
     unsafe fn unwrap_unchecked(value: u8) -> Self::Output {
-        core::num::NonZeroU8::new_unchecked(value)
+        unsafe { core::num::NonZeroU8::new_unchecked(value) }
     }
 }
 
@@ -53,7 +53,7 @@ unsafe impl Sentinel<i8> for Null {
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const i8) -> usize {
-        libc::strlen(slice as *const core::ffi::c_char) as usize
+        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
     }
 }
 
@@ -69,7 +69,7 @@ unsafe impl UnwrapSentinel<i8> for Null {
 
     #[inline(always)]
     unsafe fn unwrap_unchecked(value: i8) -> Self::Output {
-        core::num::NonZeroI8::new_unchecked(value)
+        unsafe { core::num::NonZeroI8::new_unchecked(value) }
     }
 }
 
@@ -88,7 +88,7 @@ unsafe impl Sentinel<bool> for Null {
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const bool) -> usize {
-        libc::strlen(slice as *const core::ffi::c_char) as usize
+        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
     }
 }
 
@@ -121,7 +121,7 @@ macro_rules! impl_Sentinel_zero {
 
                 #[inline(always)]
                 unsafe fn unwrap_unchecked(value: $t) -> Self::Output {
-                    <$nz>::new_unchecked(value)
+                    unsafe { <$nz>::new_unchecked(value) }
                 }
             }
         )*
@@ -169,7 +169,7 @@ unsafe impl<T: ?Sized> UnwrapSentinel<*const T> for Null {
 
     #[inline(always)]
     unsafe fn unwrap_unchecked(value: *const T) -> Self::Output {
-        core::ptr::NonNull::new_unchecked(value as *mut T)
+        unsafe { core::ptr::NonNull::new_unchecked(value as *mut T) }
     }
 }
 
@@ -201,7 +201,7 @@ unsafe impl<T: ?Sized> UnwrapSentinel<*mut T> for Null {
 
     #[inline(always)]
     unsafe fn unwrap_unchecked(value: *mut T) -> Self::Output {
-        core::ptr::NonNull::new_unchecked(value)
+        unsafe { core::ptr::NonNull::new_unchecked(value) }
     }
 }
 
@@ -224,6 +224,6 @@ unsafe impl<T> UnwrapSentinel<Option<T>> for Null {
 
     #[inline(always)]
     unsafe fn unwrap_unchecked(value: Option<T>) -> Self::Output {
-        value.unwrap_unchecked()
+        unsafe { value.unwrap_unchecked() }
     }
 }

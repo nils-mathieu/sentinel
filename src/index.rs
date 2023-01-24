@@ -27,12 +27,12 @@ impl<T, S: Sentinel<T>> SliceIndex<T, S> for usize {
 
     #[inline(always)]
     unsafe fn index_unchecked(self, slice: &SSlice<T, S>) -> &Self::Output {
-        &*slice.as_ptr().add(self)
+        unsafe { &*slice.as_ptr().add(self) }
     }
 
     #[inline(always)]
     unsafe fn index_unchecked_mut(self, slice: &mut SSlice<T, S>) -> &mut Self::Output {
-        &mut *slice.as_mut_ptr().add(self)
+        unsafe { &mut *slice.as_mut_ptr().add(self) }
     }
 }
 
@@ -41,18 +41,22 @@ impl<T, S: Sentinel<T>> SliceIndex<T, S> for Range<usize> {
 
     #[inline(always)]
     unsafe fn index_unchecked(self, slice: &SSlice<T, S>) -> &Self::Output {
-        core::slice::from_raw_parts(
-            slice.as_ptr().add(self.start),
-            self.end.wrapping_sub(self.start),
-        )
+        unsafe {
+            core::slice::from_raw_parts(
+                slice.as_ptr().add(self.start),
+                self.end.wrapping_sub(self.start),
+            )
+        }
     }
 
     #[inline(always)]
     unsafe fn index_unchecked_mut(self, slice: &mut SSlice<T, S>) -> &mut Self::Output {
-        core::slice::from_raw_parts_mut(
-            slice.as_mut_ptr().add(self.start),
-            self.end.wrapping_sub(self.start),
-        )
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                slice.as_mut_ptr().add(self.start),
+                self.end.wrapping_sub(self.start),
+            )
+        }
     }
 }
 
@@ -61,12 +65,12 @@ impl<T, S: Sentinel<T>> SliceIndex<T, S> for RangeTo<usize> {
 
     #[inline(always)]
     unsafe fn index_unchecked(self, slice: &SSlice<T, S>) -> &Self::Output {
-        core::slice::from_raw_parts(slice.as_ptr(), self.end)
+        unsafe { core::slice::from_raw_parts(slice.as_ptr(), self.end) }
     }
 
     #[inline(always)]
     unsafe fn index_unchecked_mut(self, slice: &mut SSlice<T, S>) -> &mut Self::Output {
-        core::slice::from_raw_parts_mut(slice.as_mut_ptr(), self.end)
+        unsafe { core::slice::from_raw_parts_mut(slice.as_mut_ptr(), self.end) }
     }
 }
 
@@ -75,11 +79,11 @@ impl<T, S: Sentinel<T>> SliceIndex<T, S> for RangeToInclusive<usize> {
 
     #[inline(always)]
     unsafe fn index_unchecked(self, slice: &SSlice<T, S>) -> &Self::Output {
-        core::slice::from_raw_parts(slice.as_ptr(), self.end.wrapping_add(1))
+        unsafe { core::slice::from_raw_parts(slice.as_ptr(), self.end.wrapping_add(1)) }
     }
 
     #[inline(always)]
     unsafe fn index_unchecked_mut(self, slice: &mut SSlice<T, S>) -> &mut Self::Output {
-        core::slice::from_raw_parts_mut(slice.as_mut_ptr(), self.end.wrapping_add(1))
+        unsafe { core::slice::from_raw_parts_mut(slice.as_mut_ptr(), self.end.wrapping_add(1)) }
     }
 }
