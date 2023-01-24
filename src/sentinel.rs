@@ -13,7 +13,7 @@
 /// [`find_sentinel`]: Sentinel::find_sentinel
 /// [`find_sentinel_infinite`]: Sentinel::find_sentinel_infinite
 pub unsafe trait Sentinel<T> {
-    /// Determines whether `T` is a sentinel value.
+    /// Determines whether `value` is a sentinel value.
     fn is_sentinel(value: &T) -> bool;
 
     /// Returns the index of the first sentinel value referenced by the provided pointer.
@@ -34,6 +34,40 @@ pub unsafe trait Sentinel<T> {
     #[inline]
     fn find_sentinel(slice: &[T]) -> Option<usize> {
         slice.iter().position(Self::is_sentinel)
+    }
+}
+
+/// A trait for types which may be "unwrapped" when they are not a sentinel.
+///
+/// That includes values such as integers, which can be safely converted into their `NonZero*`
+/// version.
+///
+/// # Safety
+///
+/// The `unwrap_unchecked` function must be safe to call with any non-sentinel value.
+pub unsafe trait UnwrapSentinel<T>: Sentinel<T> {
+    /// The output of the [`unwrap_unchecked`] operation.
+    type Output;
+
+    /// Unwraps the provided value.
+    ///
+    /// # Safety
+    ///
+    /// The provided `value` must not be a sentinel.
+    unsafe fn unwrap_unchecked(value: T) -> Self::Output;
+
+    /// Tries to unwrap the provided value.
+    ///
+    /// If `value` is not a sentinel value, `Some(_)` is returned. Otherwise, `None` is returned.
+    #[inline]
+    fn unwrap(value: T) -> Option<Self::Output> {
+        if Self::is_sentinel(&value) {
+            None
+        } else {
+            // SAFETY:
+            //  We just made sure that `value` is not a sentinel.
+            Some(unsafe { Self::unwrap_unchecked(value) })
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{DefaultSentinel, Sentinel};
+use crate::{DefaultSentinel, Sentinel, UnwrapSentinel};
 
 /// A [`Sentinel`] implementation that is used as a default for every common type.
 pub enum Null {}
@@ -29,6 +29,15 @@ unsafe impl DefaultSentinel<u8> for Null {
     }
 }
 
+unsafe impl UnwrapSentinel<u8> for Null {
+    type Output = core::num::NonZeroU8;
+
+    #[inline(always)]
+    unsafe fn unwrap_unchecked(value: u8) -> Self::Output {
+        core::num::NonZeroU8::new_unchecked(value)
+    }
+}
+
 unsafe impl Sentinel<i8> for Null {
     #[inline(always)]
     fn is_sentinel(value: &i8) -> bool {
@@ -52,6 +61,15 @@ unsafe impl DefaultSentinel<i8> for Null {
     #[inline(always)]
     fn default_sentinel() -> i8 {
         0
+    }
+}
+
+unsafe impl UnwrapSentinel<i8> for Null {
+    type Output = core::num::NonZeroI8;
+
+    #[inline(always)]
+    unsafe fn unwrap_unchecked(value: i8) -> Self::Output {
+        core::num::NonZeroI8::new_unchecked(value)
     }
 }
 
@@ -82,7 +100,7 @@ unsafe impl DefaultSentinel<bool> for Null {
 }
 
 macro_rules! impl_Sentinel_zero {
-    ($($t:ty),* $(,)?) => {
+    ($($t:ty => $nz:ty),* $(,)?) => {
         $(
             unsafe impl Sentinel<$t> for Null {
                 #[inline(always)]
@@ -97,11 +115,31 @@ macro_rules! impl_Sentinel_zero {
                     0
                 }
             }
+
+            unsafe impl UnwrapSentinel<$t> for Null {
+                type Output = $nz;
+
+                #[inline(always)]
+                unsafe fn unwrap_unchecked(value: $t) -> Self::Output {
+                    <$nz>::new_unchecked(value)
+                }
+            }
         )*
     };
 }
 
-impl_Sentinel_zero!(u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
+impl_Sentinel_zero!(
+    u16 => core::num::NonZeroU16,
+    i16 => core::num::NonZeroI16,
+    u32 => core::num::NonZeroU32,
+    i32 => core::num::NonZeroI32,
+    u64 => core::num::NonZeroU64,
+    i64 => core::num::NonZeroI64,
+    u128 => core::num::NonZeroU128,
+    i128 => core::num::NonZeroI128,
+    usize => core::num::NonZeroUsize,
+    isize => core::num::NonZeroIsize,
+);
 
 unsafe impl<T: ?Sized> Sentinel<*const T> for Null {
     #[inline(always)]
@@ -123,6 +161,15 @@ unsafe impl<T: ?Sized + core::ptr::Thin> DefaultSentinel<*const T> for Null {
     #[inline(always)]
     fn default_sentinel() -> *const T {
         core::ptr::from_raw_parts(core::ptr::null(), ())
+    }
+}
+
+unsafe impl<T: ?Sized> UnwrapSentinel<*const T> for Null {
+    type Output = core::ptr::NonNull<T>;
+
+    #[inline(always)]
+    unsafe fn unwrap_unchecked(value: *const T) -> Self::Output {
+        core::ptr::NonNull::new_unchecked(value as *mut T)
     }
 }
 
@@ -149,6 +196,15 @@ unsafe impl<T: ?Sized + core::ptr::Thin> DefaultSentinel<*mut T> for Null {
     }
 }
 
+unsafe impl<T: ?Sized> UnwrapSentinel<*mut T> for Null {
+    type Output = core::ptr::NonNull<T>;
+
+    #[inline(always)]
+    unsafe fn unwrap_unchecked(value: *mut T) -> Self::Output {
+        core::ptr::NonNull::new_unchecked(value)
+    }
+}
+
 unsafe impl<T> Sentinel<Option<T>> for Null {
     #[inline(always)]
     fn is_sentinel(value: &Option<T>) -> bool {
@@ -160,5 +216,14 @@ unsafe impl<T> DefaultSentinel<Option<T>> for Null {
     #[inline(always)]
     fn default_sentinel() -> Option<T> {
         None
+    }
+}
+
+unsafe impl<T> UnwrapSentinel<Option<T>> for Null {
+    type Output = T;
+
+    #[inline(always)]
+    unsafe fn unwrap_unchecked(value: Option<T>) -> Self::Output {
+        value.unwrap_unchecked()
     }
 }
