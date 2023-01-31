@@ -307,8 +307,8 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// # Examples
     ///
     /// ```
-    /// let sslice = sentinel::cstr!("Hello!").as_sslice();
-    /// let mut iter = sslice.iter();
+    /// let s = sentinel::cstr!("Hello!");
+    /// let mut iter = s.iter();
     ///
     /// assert_eq!(iter.next(), Some(&b'H'));
     /// assert_eq!(iter.next(), Some(&b'e'));
