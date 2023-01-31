@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["slice", "cstr", "null"]
 categories = ["data-structures", "no-std", "development-tools::ffi"]
 repository = "https://github.com/nils-mathieu/sentinel"
-readme = "readme.md"
+readme = "README.md"
 documentation = "https://docs.rs/sentinel"
 
 [features]
