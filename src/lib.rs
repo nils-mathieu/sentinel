@@ -166,7 +166,7 @@ mod index;
 /// A type that wraps a "C-like" string.
 ///
 /// When you hold a reference to a `CStr`, you are guarenteed that it is null-terminated. This type
-/// knows this allows safe manipulation of those bytes.
+/// knows this and allows safe manipulation of those bytes.
 pub type CStr = SSlice<u8, Null>;
 
 #[cfg(feature = "nightly")]
@@ -196,7 +196,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// The elements referenced by the provided pointer, until the first sentinel value, must be
     /// part of the same allocated object. They must be properly initialized and safe for reads.
     ///
-    /// This invalid must remain until the end of the lifetime `'a` (at least).
+    /// This invariant must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
     pub const unsafe fn from_ptr<'a>(ptr: *const T) -> &'a Self {
         // SAFETY:
@@ -212,7 +212,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// part of the same allocated object. They must be properly initialized and safe for reads
     /// and writes.
     ///
-    /// This invalid must remain until the end of the lifetime `'a` (at least).
+    /// This invariant must remain until the end of the lifetime `'a` (at least).
     #[inline(always)]
     pub unsafe fn from_mut_ptr<'a>(ptr: *mut T) -> &'a mut Self {
         // SAFETY:
