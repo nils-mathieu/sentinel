@@ -115,7 +115,7 @@
 //!
 //! - `memchr` - use the `memchr` crate to look for null characters in sentinel-terminated slices.
 //!
-//! *`alloc` is enabled by default.*
+//! *`alloc` and `memchr` are enabled by default.*
 //!
 //! # Old `sentinel` crate
 //!
