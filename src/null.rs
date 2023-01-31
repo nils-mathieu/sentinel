@@ -10,15 +10,26 @@ unsafe impl Sentinel<u8> for Null {
     }
 
     #[inline(always)]
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", not(feature = "libc")))]
     fn find_sentinel(slice: &[u8]) -> Option<usize> {
         memchr::memchr(0, slice)
+    }
+
+    #[inline(always)]
+    #[cfg(all(feature = "libc"))]
+    fn find_sentinel(slice: &[u8]) -> Option<usize> {
+        let ret = unsafe { libc::memchr(slice.as_ptr() as _, b'0' as _, slice.len()) as *const u8 };
+        if ret.is_null() {
+            None
+        } else {
+            Some(unsafe { ret.offset_from(slice.as_ptr()) } as usize)
+        }
     }
 
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const u8) -> usize {
-        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
+        unsafe { libc::strlen(slice as _) }
     }
 }
 
@@ -45,15 +56,26 @@ unsafe impl Sentinel<i8> for Null {
     }
 
     #[inline(always)]
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", not(feature = "libc")))]
     fn find_sentinel(slice: &[i8]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [i8] as *const [u8])) }
+    }
+
+    #[inline(always)]
+    #[cfg(all(feature = "libc"))]
+    fn find_sentinel(slice: &[i8]) -> Option<usize> {
+        let ret = unsafe { libc::memchr(slice.as_ptr() as _, b'0' as _, slice.len()) as *const i8 };
+        if ret.is_null() {
+            None
+        } else {
+            Some(unsafe { ret.offset_from(slice.as_ptr()) } as usize)
+        }
     }
 
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const i8) -> usize {
-        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
+        unsafe { libc::strlen(slice as _) }
     }
 }
 
@@ -80,15 +102,27 @@ unsafe impl Sentinel<bool> for Null {
     }
 
     #[inline(always)]
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", not(feature = "libc")))]
     fn find_sentinel(slice: &[bool]) -> Option<usize> {
         unsafe { memchr::memchr(0, &*(slice as *const [bool] as *const [u8])) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "libc")]
+    fn find_sentinel(slice: &[bool]) -> Option<usize> {
+        let ret =
+            unsafe { libc::memchr(slice.as_ptr() as _, b'0' as _, slice.len()) as *const bool };
+        if ret.is_null() {
+            None
+        } else {
+            Some(unsafe { ret.offset_from(slice.as_ptr()) } as usize)
+        }
     }
 
     #[cfg(feature = "libc")]
     #[inline(always)]
     unsafe fn find_sentinel_infinite(slice: *const bool) -> usize {
-        unsafe { libc::strlen(slice as *const core::ffi::c_char) as usize }
+        unsafe { libc::strlen(slice as _) }
     }
 }
 
