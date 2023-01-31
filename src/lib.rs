@@ -106,11 +106,11 @@ pub use self::sbox::*;
 mod display;
 mod index;
 
-mod cstr;
-pub use self::cstr::*;
-
-mod utf8;
-pub use self::utf8::Utf8Error;
+/// A type that wraps a "C-like" string.
+///
+/// When you hold a reference to a `CStr`, you are guarenteed that it is null-terminated. This type
+/// knows this allows safe manipulation of those bytes.
+pub type CStr = SSlice<u8, Null>;
 
 #[cfg(feature = "nightly")]
 extern "C" {
@@ -788,24 +788,15 @@ macro_rules! sslice {
     };
 }
 
-/// Creates a new [`SSlice<u8>`] using a string literal. A null byte is automatically appended at
-/// the end of that literal, ensuring the safety of the operation.
+/// Creates a new [`CStr`] using a string literal. A null byte is automatically appended at the end
+/// of that literal, ensuring the safety of the operation.
 ///
 /// # Examples
 ///
 /// ```
-/// let s = sentinel::sslice!("Hello, World!");
+/// let s = sentinel::cstr!("Hello, World!");
 /// assert_eq!(s, b"Hello, World!");
 /// ```
-#[macro_export]
-macro_rules! sslice {
-    ($s:literal) => {
-        unsafe { $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat!($s, "\0").as_ptr()) }
-    };
-}
-
-/// Creates a new [`CStr`] using a string literal. A null byte is automatically appended to that
-/// literal, ensuring the safety of the operation.
 #[macro_export]
 macro_rules! cstr {
     ($s:literal) => {
@@ -931,29 +922,15 @@ fn as_slice() {
 #[cfg(feature = "nightly")]
 #[test]
 fn sslice_macro() {
-    let s = sslice!(b"test");
+    let s = cstr!(b"test");
     assert_eq!(s, b"test");
 }
 
 #[cfg(test)]
 #[cfg(feature = "nightly")]
 #[test]
-fn sslice_macro_empty() {
-    let s = sslice!(b"");
-    assert_eq!(s, b"");
-}
-
-#[cfg(test)]
-#[test]
-fn sslice_macro() {
-    let s = sslice!("test");
-    assert_eq!(s, b"test");
-}
-
-#[cfg(test)]
-#[test]
-fn sslice_macro_empty() {
-    let s = sslice!("");
+fn cstr_macro_empty() {
+    let s = cstr!(b"");
     assert_eq!(s, b"");
 }
 
@@ -961,12 +938,12 @@ fn sslice_macro_empty() {
 #[test]
 fn cstr_macro() {
     let s = cstr!("test");
-    assert_eq!(s, "test");
+    assert_eq!(s, b"test");
 }
 
 #[cfg(test)]
 #[test]
 fn cstr_macro_empty() {
     let s = cstr!("");
-    assert_eq!(s, "");
+    assert_eq!(s, b"");
 }
