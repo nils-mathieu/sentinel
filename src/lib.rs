@@ -142,6 +142,7 @@ extern crate alloc;
 
 use core::cmp::Ordering;
 use core::fmt;
+use core::fmt::Write;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::panic::{RefUnwindSafe, UnwindSafe};
@@ -160,7 +161,6 @@ mod sbox;
 #[cfg(any(feature = "nightly", feature = "alloc"))]
 pub use self::sbox::*;
 
-mod display;
 mod index;
 
 /// A type that wraps a "C-like" string.
@@ -622,19 +622,93 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     }
 }
 
-impl SSlice<core::ffi::c_char> {
+impl CStr {
     /// Creates a new [`SSlice<T>`] from the provided standard [`core::ffi::CStr`].
     #[inline]
     pub fn from_std_cstr(cstr: &core::ffi::CStr) -> &Self {
         // Safety:
         //  We know by invariant that the standard CStr is null-terminated.
-        unsafe { Self::from_ptr(cstr.as_ptr()) }
+        unsafe { Self::from_ptr(cstr.as_ptr() as *const u8) }
     }
 
     /// Turns this [`SSlice<T>`] into a standard [`core::ffi::CStr`].
     #[inline]
     pub fn as_std_cstr(&self) -> &core::ffi::CStr {
-        unsafe { core::ffi::CStr::from_ptr(self.as_ptr()) }
+        unsafe { core::ffi::CStr::from_ptr(self.as_ptr() as *const core::ffi::c_char) }
+    }
+
+    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.
+    ///
+    /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
+    ///
+    /// [`REPLACEMENT_CHARACTER`]: core::char::REPLACEMENT_CHARACTER
+    #[inline(always)]
+    pub fn display(&self) -> &Display {
+        unsafe { &*(self as *const Self as *const Display) }
+    }
+}
+
+/// Implements [`fmt::Display`] [`fmt::Debug`] for a [`CStr`].
+#[repr(transparent)]
+pub struct Display(CStr);
+
+impl fmt::Display for Display {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut slice = self.0.as_slice();
+        loop {
+            let s = next_str_part(&mut slice);
+            f.write_str(s)?;
+
+            if slice.is_empty() {
+                break;
+            }
+
+            f.write_char(char::REPLACEMENT_CHARACTER)?;
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Debug for Display {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut slice = self.0.as_slice();
+
+        f.write_str("\"")?;
+        loop {
+            let s = next_str_part(&mut slice);
+            fmt::Display::fmt(&s.escape_debug(), f)?;
+
+            if slice.is_empty() {
+                break;
+            }
+
+            f.write_char(char::REPLACEMENT_CHARACTER)?;
+        }
+        f.write_str("\"")?;
+        Ok(())
+    }
+}
+
+/// Returns the largest prefix of `slice` that's valid UTF-8 and strips.
+fn next_str_part<'a>(slice: &mut &'a [u8]) -> &'a str {
+    match core::str::from_utf8(slice) {
+        Ok(ok) => {
+            *slice = &[];
+            ok
+        }
+        Err(err) => unsafe {
+            // SAFETY:
+            //  We know that the slice is valid up to that point. We can construct a valid `str`
+            //  from those bytes that have been validated.
+            let ret = core::str::from_utf8_unchecked(slice.get_unchecked(..err.valid_up_to()));
+
+            // SAFETY:
+            //  If the slice is valid up to that point, then its length must be at least that many
+            //  bytes.
+            *slice = slice.get_unchecked(err.valid_up_to()..);
+
+            ret
+        },
     }
 }
 
