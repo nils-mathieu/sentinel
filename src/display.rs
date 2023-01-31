@@ -4,7 +4,7 @@ use core::fmt::Write;
 use crate::CStr;
 
 impl CStr {
-    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`SSlice<u8>`] type.
+    /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.
     ///
     /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
     ///

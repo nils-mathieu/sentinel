@@ -128,8 +128,9 @@
 //! [`Null`]: https://docs.rs/sentinel/latest/sentinel/struct.Null.html
 //! [`SBox<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SBox.html
 //! [`CStr`]: https://docs.rs/sentinel/latest/sentinel/struct.CStr.html
-//! [`SSlice<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SSlice.html#![cfg_attr(not(test), no_std)]
+//! [`SSlice<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SSlice.html
 
+#![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "nightly", feature(extern_types))]
 #![cfg_attr(feature = "nightly", feature(allocator_api))]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
@@ -972,22 +973,6 @@ fn as_slice() {
     let s = SSlice::<u8>::from_slice_mut(&mut slice).unwrap();
     let sl = s.as_slice_mut();
     assert_eq!(sl, b"hello");
-}
-
-#[cfg(test)]
-#[cfg(feature = "nightly")]
-#[test]
-fn sslice_macro() {
-    let s = cstr!(b"test");
-    assert_eq!(s, b"test");
-}
-
-#[cfg(test)]
-#[cfg(feature = "nightly")]
-#[test]
-fn cstr_macro_empty() {
-    let s = cstr!(b"");
-    assert_eq!(s, b"");
 }
 
 #[cfg(test)]

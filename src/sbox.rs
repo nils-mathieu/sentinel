@@ -581,6 +581,7 @@ fn init_slice<T>(slice: &mut [MaybeUninit<T>], mut f: impl FnMut(usize) -> T) {
 
 #[cfg(test)]
 #[test]
+#[cfg(feature = "alloc")]
 fn drop_count() {
     use alloc::rc::Rc;
 
@@ -604,6 +605,7 @@ fn drop_count() {
 
 #[cfg(test)]
 #[test]
+#[cfg(feature = "alloc")]
 fn drop_count_panic() {
     #[derive(Clone)]
     struct PanicOnDrop(bool);
@@ -641,6 +643,7 @@ fn drop_count_panic() {
 
 #[cfg(test)]
 #[test]
+#[cfg(feature = "alloc")]
 fn clone_impl_panics() {
     struct PanicOnClone(bool);
 
@@ -669,6 +672,7 @@ fn clone_impl_panics() {
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 #[test]
 fn from_slice_with_sentinel() {
     let slice = [1, 2, 3, 0, 1, 2, 3];
@@ -679,6 +683,7 @@ fn from_slice_with_sentinel() {
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 #[test]
 fn from_slice_no_sentinel() {
     let slice = [1, 2, 3];
