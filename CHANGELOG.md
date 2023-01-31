@@ -15,3 +15,6 @@ This type represented a null-terminated, UTF-8, slice. In practice, we had to in
 UTF-8 strings into the library, which kinda doubles what the core library already does. Moreover,
 the `CStr` name basically alwaysa refers to ASCII C strings in the Rust ecosystem at this point.
 Chaging its meaning was already a bit surprising.
+
+- Everything related to c-like strings is now using the `CStr` alias instead of a mix of
+`SSlice<u8>` and `SSlice<i8>`. Some function of `SSlice<i8>` are no longer available.
