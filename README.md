@@ -13,7 +13,7 @@ like that, has numerous advantages, which won't be discussed here.
 There is however two main problems with the `&[T]` type:
 
 1. It is not (at least, yet) FFI-safe. One cannot create an `extern "C" fn(s: &[u32])` function and
-expect it to work when calling it from C-code.
+   expect it to work when calling it from C-code.
 
 2. The size of `&[T]` has the size of two `usize`s.
 
@@ -49,24 +49,25 @@ It is used to determine whether a specific instance of `T` should be treated as 
 
 ### SSlice
 
-Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`SSlice<T, S>`] type.
-It is generic over `T`, the type of stored elements, and over `S: Sentinel<T>`, defining which
-instances of `T` should be considered sentinel values.
+Finally, in conjonction with the [`Sentinel`] trait, this crate defines the [`SSlice<T>`] type.
+It is generic over `T`, the type of stored elements, overing great flexibility.
 
 ```rust
-struct SSlice<T, S: Sentinel<T>> {
-    _marker: PhantomData<(T, S)>,
+struct SSlice<T> {
+    _marker: PhantomData<T>,
 }
 ```
 
 Note that this type actually contains no data. Only references to this type can be created (i.e.
-`&SSlice<T, S>` or `&mut SSlice<T, S>`), and those references have the size a single `usize`.
+`&SSlice<T>` or `&mut SSlice<T>`), and those references have the size a single `usize`.
 
 ## FFI
 
-The `SSlice<T, S>` type is *FFI safe*, which mean you can now write this:
+The `SSlice<T>` type is _FFI safe_, which mean you can now write this:
 
 ```rust
+// type CStr = sentinel::SSlice<u8>;
+
 extern "C" {
     /// # Safety
     ///
@@ -102,28 +103,28 @@ extern "C" fn main(_ac: libc::c_int, argv: &SSlice<Option<&CStr>>) -> libc::c_in
 
 ## Features
 
- - `alloc` - adds support for the `alloc` crate. This adds the [`SBox<T, S>`] type.
+- `alloc` - adds support for the `alloc` crate. This adds the [`SBox<T>`] type.
 
- - `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of
-[`SSlice<T, S>`] can be created on the stack by making it [`!Sized`]. This feature also enables
-support for the new `allocator_api` unstable feature.
+- `nightly` - makes use of the unstable `extern_type` feature to make sure no instance of
+  [`SSlice<T>`] can be created on the stack by making it [`!Sized`]. This feature also enables
+  support for the new `allocator_api` unstable feature.
 
 - `libc` - use the libc's `strlen` and `memchr` to look for null characters in sentinel-terminated
-slices.
+  slices.
 
 - `memchr` - use the `memchr` crate to look for null characters in sentinel-terminated slices.
 
-*`alloc` and `memchr` are enabled by default.*
+_`alloc` and `memchr` are enabled by default._
 
 # Old `sentinel` crate
 
 The name `sentinel` was kindly given to me by the previous maintainer of [this](https://github.com/maidsafe-archive/sentinel) project.
 
 Every pre-0.2 versions (on crates.io) contain the source code of that crate.
- 
-[`Sentinel`]: https://docs.rs/sentinel/latest/sentinel/trait.Sentinel.html
-[`!Sized`]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
-[`Null`]: https://docs.rs/sentinel/latest/sentinel/struct.Null.html
-[`SBox<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SBox.html
-[`CStr`]: https://docs.rs/sentinel/latest/sentinel/struct.CStr.html
-[`SSlice<T, S>`]: https://docs.rs/sentinel/latest/sentinel/struct.SSlice.html
+
+[`sentinel`]: https://docs.rs/sentinel/latest/sentinel/trait.Sentinel.html
+[`!sized`]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
+[`null`]: https://docs.rs/sentinel/latest/sentinel/struct.Null.html
+[`sbox<t>`]: https://docs.rs/sentinel/latest/sentinel/struct.SBox.html
+[`cstr`]: https://docs.rs/sentinel/latest/sentinel/struct.CStr.html
+[`sslice<t>`]: https://docs.rs/sentinel/latest/sentinel/struct.SSlice.html

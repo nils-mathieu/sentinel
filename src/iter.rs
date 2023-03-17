@@ -1,6 +1,6 @@
 use crate::{SSlice, Sentinel};
 
-/// An iterator over the elements of a [`SSlice<T, S>`].
+/// An iterator over the elements of a [`SSlice<T>`].
 pub struct Iter<T: Sentinel>(SSlice<T>);
 
 impl<T: Sentinel> Iter<T> {
