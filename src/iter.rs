@@ -1,36 +1,34 @@
-use core::marker::PhantomData;
-
-use crate::{SSlice, Sentinel, UnwrapSentinel};
+use crate::{SSlice, Sentinel};
 
 /// An iterator over the elements of a [`SSlice<T, S>`].
-pub struct Iter<T, S: Sentinel<T>>(SSlice<T, S>);
+pub struct Iter<T: Sentinel>(SSlice<T>);
 
-impl<T, S: Sentinel<T>> Iter<T, S> {
+impl<T: Sentinel> Iter<T> {
     #[inline(always)]
-    pub(crate) fn new_ref(slice: &SSlice<T, S>) -> &Self {
-        unsafe { &*(slice as *const SSlice<T, S> as *const Self) }
+    pub(crate) fn new_ref(slice: &SSlice<T>) -> &Self {
+        unsafe { &*(slice as *const SSlice<T> as *const Self) }
     }
 
     #[inline(always)]
-    pub(crate) fn new_mut(slice: &mut SSlice<T, S>) -> &mut Self {
-        unsafe { &mut *(slice as *mut SSlice<T, S> as *mut Self) }
+    pub(crate) fn new_mut(slice: &mut SSlice<T>) -> &mut Self {
+        unsafe { &mut *(slice as *mut SSlice<T> as *mut Self) }
     }
 
     /// Returns a [`SSlice<T, S>`] over the remaining instances.
     #[inline(always)]
-    pub fn remainder(&self) -> &SSlice<T, S> {
+    pub fn remainder(&self) -> &SSlice<T> {
         &self.0
     }
 
     /// Returns a [`SSlice<T, S>`] over the remaining instances.
     #[inline(always)]
-    pub fn remainder_mut(&mut self) -> &mut SSlice<T, S> {
+    pub fn remainder_mut(&mut self) -> &mut SSlice<T> {
         &mut self.0
     }
 
     /// Automatically "unwraps" the values of this iterator.
     #[inline(always)]
-    pub fn unwrap_sentinels(&self) -> UnwrapCopiedSentinels<&Self, S>
+    pub fn unwrap_sentinels(&self) -> UnwrapCopiedSentinels<&Self>
     where
         T: Copy,
     {
@@ -40,7 +38,7 @@ impl<T, S: Sentinel<T>> Iter<T, S> {
     }
 }
 
-impl<'a, T, S: Sentinel<T>> Iterator for &'a Iter<T, S> {
+impl<'a, T: Sentinel> Iterator for &'a Iter<T> {
     type Item = &'a T;
 
     #[inline]
@@ -68,20 +66,20 @@ impl<'a, T, S: Sentinel<T>> Iterator for &'a Iter<T, S> {
     }
 }
 
-impl<'a, T, S: Sentinel<T>> ExactSizeIterator for &'a Iter<T, S> {
+impl<'a, T: Sentinel> ExactSizeIterator for &'a Iter<T> {
     #[inline(always)]
     fn len(&self) -> usize {
         self.0.len()
     }
 }
 
-impl<'a, T, S: Sentinel<T>> Iterator for &'a mut Iter<T, S> {
+impl<'a, T: Sentinel> Iterator for &'a mut Iter<T> {
     type Item = &'a mut T;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         unsafe {
-            if S::is_sentinel(&*self.0.as_ptr()) {
+            if T::is_sentinel(&*self.0.as_ptr()) {
                 None
             } else {
                 let first = &mut *self.0.as_mut_ptr();
@@ -106,7 +104,7 @@ impl<'a, T, S: Sentinel<T>> Iterator for &'a mut Iter<T, S> {
     }
 }
 
-impl<'a, T, S: Sentinel<T>> ExactSizeIterator for &'a mut Iter<T, S> {
+impl<'a, T: Sentinel> ExactSizeIterator for &'a mut Iter<T> {
     #[inline(always)]
     fn len(&self) -> usize {
         self.0.len()
@@ -114,36 +112,33 @@ impl<'a, T, S: Sentinel<T>> ExactSizeIterator for &'a mut Iter<T, S> {
 }
 
 /// A simple type-definition which indicates that values are copied before being "unwrapped".
-pub type UnwrapCopiedSentinels<I, S> = UnwrapSentinels<core::iter::Copied<I>, S>;
+pub type UnwrapCopiedSentinels<I> = UnwrapSentinels<core::iter::Copied<I>>;
 
 /// An iterator that automatically "unwraps" the sentinel values of an iterator.
 #[derive(Clone)]
-pub struct UnwrapSentinels<I, S> {
+pub struct UnwrapSentinels<I> {
     /// # Safety
     ///
     /// This iterator must only yield non-sentinel values.
     iter: I,
-    _sentinel: PhantomData<S>,
 }
 
-impl<I, S> UnwrapSentinels<I, S> {
+impl<I> UnwrapSentinels<I> {
     /// # Safety
     ///
     /// If `I` implements `Iterator`, it must only yeild non-sentinel values.
+    #[inline]
     pub(crate) unsafe fn new(iter: I) -> Self {
-        Self {
-            iter,
-            _sentinel: PhantomData,
-        }
+        Self { iter }
     }
 }
 
-impl<I, S> Iterator for UnwrapSentinels<I, S>
+impl<I> Iterator for UnwrapSentinels<I>
 where
     I: Iterator,
-    S: UnwrapSentinel<I::Item>,
+    I::Item: Sentinel,
 {
-    type Item = S::Output;
+    type Item = <I::Item as Sentinel>::Unwrapped;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -152,7 +147,7 @@ where
         //  values, ensuring that `unwrap_unchecked` is safe.
         self.iter
             .next()
-            .map(|val| unsafe { S::unwrap_unchecked(val) })
+            .map(|val| unsafe { I::Item::unwrap_sentinel_unchecked(val) })
     }
 
     #[inline(always)]
@@ -169,10 +164,10 @@ where
     }
 }
 
-impl<I, S> ExactSizeIterator for UnwrapSentinels<I, S>
+impl<I> ExactSizeIterator for UnwrapSentinels<I>
 where
     I: ExactSizeIterator,
-    S: UnwrapSentinel<I::Item>,
+    I::Item: Sentinel,
 {
     #[inline(always)]
     fn len(&self) -> usize {

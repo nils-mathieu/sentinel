@@ -122,7 +122,7 @@
 //! The name `sentinel` was kindly given to me by the previous maintainer of [this](https://github.com/maidsafe-archive/sentinel) project.
 //!
 //! Every pre-0.2 versions (on crates.io) contain the source code of that crate.
-//!  
+//!
 //! [`Sentinel`]: https://docs.rs/sentinel/latest/sentinel/trait.Sentinel.html
 //! [`!Sized`]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
 //! [`Null`]: https://docs.rs/sentinel/latest/sentinel/struct.Null.html
@@ -150,9 +150,6 @@ use core::panic::{RefUnwindSafe, UnwindSafe};
 mod sentinel;
 pub use self::sentinel::*;
 
-mod null;
-pub use self::null::*;
-
 mod iter;
 pub use self::iter::*;
 
@@ -167,7 +164,7 @@ mod index;
 ///
 /// When you hold a reference to a `CStr`, you are guarenteed that it is null-terminated. This type
 /// knows this and allows safe manipulation of those bytes.
-pub type CStr = SSlice<u8, Null>;
+pub type CStr = SSlice<u8>;
 
 #[cfg(feature = "nightly")]
 extern "C" {
@@ -176,19 +173,18 @@ extern "C" {
 
 /// A sentinel-terminated slice.
 #[repr(transparent)]
-pub struct SSlice<T, S = Null>
+pub struct SSlice<T>
 where
-    S: Sentinel<T>,
+    T: Sentinel,
 {
     /// Educate the drop-checker about the values owned by a value of this type.
     _content: PhantomData<[T]>,
-    _sentinel: PhantomData<fn() -> S>,
     /// Makes that `SSlice<T>` is `!Sized` and cannot be created on the stack.
     #[cfg(feature = "nightly")]
     _size: SliceContent,
 }
 
-impl<T, S: Sentinel<T>> SSlice<T, S> {
+impl<T: Sentinel> SSlice<T> {
     /// Creates a new [`SSlice<T>`] instance from the provided pointer.
     ///
     /// # Safety
@@ -240,7 +236,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// ```
     #[inline]
     pub fn from_slice_split(slice: &[T]) -> Option<(&Self, &[T])> {
-        let idx = S::find_sentinel(slice)?;
+        let idx = T::find_sentinel(slice)?;
 
         Some(unsafe {
             (
@@ -269,7 +265,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// ```
     #[inline]
     pub fn from_slice(slice: &[T]) -> Option<&Self> {
-        if S::find_sentinel(slice).is_some() {
+        if T::find_sentinel(slice).is_some() {
             Some(unsafe { Self::from_ptr(slice.as_ptr()) })
         } else {
             None
@@ -297,7 +293,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// ```
     #[inline]
     pub fn from_slice_split_mut(slice: &mut [T]) -> Option<(&mut Self, &mut [T])> {
-        let idx = S::find_sentinel(slice)?;
+        let idx = T::find_sentinel(slice)?;
 
         Some(unsafe {
             (
@@ -328,7 +324,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// ```
     #[inline]
     pub fn from_slice_mut(slice: &mut [T]) -> Option<&mut Self> {
-        if S::find_sentinel(slice).is_some() {
+        if T::find_sentinel(slice).is_some() {
             Some(unsafe { Self::from_mut_ptr(slice.as_mut_ptr()) })
         } else {
             None
@@ -376,7 +372,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// assert_eq!(iter.next(), None);
     /// ```
     #[inline(always)]
-    pub fn iter(&self) -> &Iter<T, S> {
+    pub fn iter(&self) -> &Iter<T> {
         Iter::new_ref(self)
     }
 
@@ -396,7 +392,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// assert_eq!(sslice, b"123");
     /// ```
     #[inline(always)]
-    pub fn iter_mut(&mut self) -> &mut Iter<T, S> {
+    pub fn iter_mut(&mut self) -> &mut Iter<T> {
         Iter::new_mut(self)
     }
 
@@ -408,7 +404,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     #[inline(always)]
     pub unsafe fn get_unchecked<Idx>(&self, index: Idx) -> &Idx::Output
     where
-        Idx: self::index::SliceIndex<T, S>,
+        Idx: self::index::SliceIndex<T>,
     {
         unsafe { index.index_unchecked(self) }
     }
@@ -421,7 +417,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     #[inline(always)]
     pub unsafe fn get_unchecked_mut<Idx>(&mut self, index: Idx) -> &mut Idx::Output
     where
-        Idx: self::index::SliceIndex<T, S>,
+        Idx: self::index::SliceIndex<T>,
     {
         unsafe { index.index_unchecked_mut(self) }
     }
@@ -441,7 +437,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     pub fn len(&self) -> usize {
         // SAFETY:
         //  This is safe by invariant of `SSlice<T, S>`.
-        unsafe { S::find_sentinel_infinite(self.as_ptr()) }
+        unsafe { T::find_sentinel_infinite(self.as_ptr()) }
     }
 
     /// Returns whether the slice is currently empty.
@@ -458,7 +454,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     pub fn is_empty(&self) -> bool {
         // SAFETY:
         //  We're not modifying the underlying value.
-        S::is_sentinel(unsafe { self.raw_first() })
+        T::is_sentinel(unsafe { self.raw_first() })
     }
 
     /// Returns the first element of the slice, or [`None`] if it is empty.
@@ -548,7 +544,7 @@ impl<T, S: Sentinel<T>> SSlice<T, S> {
     /// ```
     pub fn split_first_mut(&mut self) -> Option<(&mut T, &mut Self)> {
         unsafe {
-            if S::is_sentinel(&*self.as_ptr()) {
+            if T::is_sentinel(&*self.as_ptr()) {
                 None
             } else {
                 Some((
@@ -712,18 +708,18 @@ fn next_str_part<'a>(slice: &mut &'a [u8]) -> &'a str {
     }
 }
 
-impl<T: Hash, S: Sentinel<T>> Hash for SSlice<T, S> {
+impl<T: Sentinel + Hash> Hash for SSlice<T> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.iter().for_each(|x| x.hash(state));
     }
 }
 
-impl<T, S: Sentinel<T>> Drop for SSlice<T, S> {
+impl<T: Sentinel> Drop for SSlice<T> {
     fn drop(&mut self) {
-        struct Guard<'a, T, S: Sentinel<T>>(&'a mut Iter<T, S>);
+        struct Guard<'a, T: Sentinel>(&'a mut Iter<T>);
 
-        impl<'a, T, S: Sentinel<T>> Guard<'a, T, S> {
+        impl<'a, T: Sentinel> Guard<'a, T> {
             pub fn drop_content(&mut self) {
                 for elem in &mut self.0 {
                     unsafe { core::ptr::drop_in_place(elem) };
@@ -731,7 +727,7 @@ impl<T, S: Sentinel<T>> Drop for SSlice<T, S> {
             }
         }
 
-        impl<'a, T, S: Sentinel<T>> Drop for Guard<'a, T, S> {
+        impl<'a, T: Sentinel> Drop for Guard<'a, T> {
             fn drop(&mut self) {
                 self.drop_content();
             }
@@ -743,32 +739,32 @@ impl<T, S: Sentinel<T>> Drop for SSlice<T, S> {
     }
 }
 
-unsafe impl<T: Sync, S: Sentinel<T>> Sync for SSlice<T, S> {}
-unsafe impl<T: Send, S: Sentinel<T>> Send for SSlice<T, S> {}
+unsafe impl<T: Sync + Sentinel> Sync for SSlice<T> {}
+unsafe impl<T: Send + Sentinel> Send for SSlice<T> {}
 
-impl<T: UnwindSafe, S: Sentinel<T>> UnwindSafe for SSlice<T, S> {}
-impl<T: RefUnwindSafe, S: Sentinel<T>> RefUnwindSafe for SSlice<T, S> {}
+impl<T: UnwindSafe + Sentinel> UnwindSafe for SSlice<T> {}
+impl<T: RefUnwindSafe + Sentinel> RefUnwindSafe for SSlice<T> {}
 
-impl<T: Unpin, S: Sentinel<T>> Unpin for SSlice<T, S> {}
+impl<T: Unpin + Sentinel> Unpin for SSlice<T> {}
 
-impl<T1, S1, T2, S2> PartialEq<SSlice<T2, S2>> for SSlice<T1, S1>
+impl<T1, T2> PartialEq<SSlice<T2>> for SSlice<T1>
 where
     T1: PartialEq<T2>,
-    S1: Sentinel<T1>,
-    S2: Sentinel<T2>,
+    T1: Sentinel,
+    T2: Sentinel,
 {
     #[inline]
-    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+    fn eq(&self, other: &SSlice<T2>) -> bool {
         self.iter().eq(other.iter())
     }
 }
 
-impl<T: Eq, S: Sentinel<T>> Eq for SSlice<T, S> {}
+impl<T: Eq + Sentinel> Eq for SSlice<T> {}
 
-impl<T1, S1, T2> PartialEq<[T2]> for SSlice<T1, S1>
+impl<T1, T2> PartialEq<[T2]> for SSlice<T1>
 where
     T1: PartialEq<T2>,
-    S1: Sentinel<T1>,
+    T1: Sentinel,
 {
     #[inline]
     fn eq(&self, other: &[T2]) -> bool {
@@ -776,21 +772,21 @@ where
     }
 }
 
-impl<T1, T2, S2> PartialEq<SSlice<T2, S2>> for [T1]
+impl<T1, T2> PartialEq<SSlice<T2>> for [T1]
 where
     T1: PartialEq<T2>,
-    S2: Sentinel<T2>,
+    T2: Sentinel,
 {
     #[inline]
-    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+    fn eq(&self, other: &SSlice<T2>) -> bool {
         self.iter().eq(other.iter())
     }
 }
 
-impl<T1, S1, T2, const N: usize> PartialEq<[T2; N]> for SSlice<T1, S1>
+impl<T1, T2, const N: usize> PartialEq<[T2; N]> for SSlice<T1>
 where
     T1: PartialEq<T2>,
-    S1: Sentinel<T1>,
+    T1: Sentinel,
 {
     #[inline]
     fn eq(&self, other: &[T2; N]) -> bool {
@@ -798,40 +794,39 @@ where
     }
 }
 
-impl<T1, T2, S2, const N: usize> PartialEq<SSlice<T2, S2>> for [T1; N]
+impl<T1, T2, const N: usize> PartialEq<SSlice<T2>> for [T1; N]
 where
     T1: PartialEq<T2>,
-    S2: Sentinel<T2>,
+    T2: Sentinel,
 {
     #[inline]
-    fn eq(&self, other: &SSlice<T2, S2>) -> bool {
+    fn eq(&self, other: &SSlice<T2>) -> bool {
         self.iter().eq(other.iter())
     }
 }
 
-impl<T1, S1, T2, S2> PartialOrd<SSlice<T2, S2>> for SSlice<T1, S1>
+impl<T1, T2> PartialOrd<SSlice<T2>> for SSlice<T1>
 where
     T1: PartialOrd<T2>,
-    S1: Sentinel<T1>,
-    S2: Sentinel<T2>,
+    T1: Sentinel,
+    T2: Sentinel,
 {
     #[inline]
-    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SSlice<T2>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<T: Ord, S: Sentinel<T>> Ord for SSlice<T, S> {
+impl<T: Ord + Sentinel> Ord for SSlice<T> {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         self.iter().cmp(other.iter())
     }
 }
 
-impl<T1, S1, T2> PartialOrd<[T2]> for SSlice<T1, S1>
+impl<T1, T2> PartialOrd<[T2]> for SSlice<T1>
 where
-    T1: PartialOrd<T2>,
-    S1: Sentinel<T1>,
+    T1: PartialOrd<T2> + Sentinel,
 {
     #[inline]
     fn partial_cmp(&self, other: &[T2]) -> Option<Ordering> {
@@ -839,21 +834,21 @@ where
     }
 }
 
-impl<T1, T2, S2> PartialOrd<SSlice<T2, S2>> for [T1]
+impl<T1, T2> PartialOrd<SSlice<T2>> for [T1]
 where
     T1: PartialOrd<T2>,
-    S2: Sentinel<T2>,
+    T2: Sentinel,
 {
     #[inline]
-    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SSlice<T2>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<T1, S1, T2, const N: usize> PartialOrd<[T2; N]> for SSlice<T1, S1>
+impl<T1, T2, const N: usize> PartialOrd<[T2; N]> for SSlice<T1>
 where
     T1: PartialOrd<T2>,
-    S1: Sentinel<T1>,
+    T1: Sentinel,
 {
     #[inline]
     fn partial_cmp(&self, other: &[T2; N]) -> Option<Ordering> {
@@ -861,19 +856,19 @@ where
     }
 }
 
-impl<T1, T2, S2, const N: usize> PartialOrd<SSlice<T2, S2>> for [T1; N]
+impl<T1, T2, const N: usize> PartialOrd<SSlice<T2>> for [T1; N]
 where
     T1: PartialOrd<T2>,
-    S2: Sentinel<T2>,
+    T2: Sentinel,
 {
     #[inline]
-    fn partial_cmp(&self, other: &SSlice<T2, S2>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SSlice<T2>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<'a, T, S: Sentinel<T>> IntoIterator for &'a SSlice<T, S> {
-    type IntoIter = &'a Iter<T, S>;
+impl<'a, T: Sentinel> IntoIterator for &'a SSlice<T> {
+    type IntoIter = &'a Iter<T>;
     type Item = &'a T;
 
     #[inline(always)]
@@ -882,8 +877,8 @@ impl<'a, T, S: Sentinel<T>> IntoIterator for &'a SSlice<T, S> {
     }
 }
 
-impl<'a, T, S: Sentinel<T>> IntoIterator for &'a mut SSlice<T, S> {
-    type IntoIter = &'a mut Iter<T, S>;
+impl<'a, T: Sentinel> IntoIterator for &'a mut SSlice<T> {
+    type IntoIter = &'a mut Iter<T>;
     type Item = &'a mut T;
 
     #[inline(always)]
@@ -892,7 +887,7 @@ impl<'a, T, S: Sentinel<T>> IntoIterator for &'a mut SSlice<T, S> {
     }
 }
 
-impl<T: fmt::Debug, S: Sentinel<T>> fmt::Debug for SSlice<T, S> {
+impl<T: fmt::Debug + Sentinel> fmt::Debug for SSlice<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
