@@ -763,27 +763,6 @@ impl<T: fmt::Debug + Sentinel> fmt::Debug for SSlice<T> {
     }
 }
 
-/// Creates a new [`SSlice<u8>`] using a string literal. A null byte is automatically appended at
-/// the end of that literal, ensuring the safety of the operation.
-///
-/// # Examples
-///
-/// ```
-/// # #![feature(concat_bytes)]
-///
-/// let s = sentinel::sslice!(b"Hello, World!");
-/// assert_eq!(s, b"Hello, World!");
-/// ```
-#[macro_export]
-#[cfg(feature = "nightly")]
-macro_rules! sslice {
-    ($s:literal) => {
-        unsafe {
-            $crate::SSlice::<u8, $crate::Null>::from_ptr(::core::concat_bytes!($s, b'\0').as_ptr())
-        }
-    };
-}
-
 /// Creates a new [`CStr`] using a string literal. A null byte is automatically appended at the end
 /// of that literal, ensuring the safety of the operation.
 ///

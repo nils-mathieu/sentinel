@@ -10,15 +10,17 @@ and this project **does not** adheres to [Semantic Versioning](https://semver.or
 
 ### Breaking Changes
 
-- Removed the [`Sentinel`] trait.
+- Removed the `Sentinel` trait.
 
 Having a trait to remain generic over the sentinel value(s) to keep track of was not really useful.
 I've been using the library for a bit and I only ever used the `Null` sentinel. To keep the library
 simple and try to prevent potential bugs, this trait is now re-purposed.
 
-- Removed the [`UnwrapSentinel`] and [`DefaultSentinel`] traits.
+- Removed the `UnwrapSentinel` and `DefaultSentinel` traits.
 
-Those two traits are not included in the new [`Sentinel`] trait.
+Those two traits are not included in the new `Sentinel` trait.
+
+- Removed the `sslice!` macro. This identifier will be re-used later.
 
 ### Bug Fixes
 
