@@ -101,7 +101,7 @@ unsafe impl Sentinel for u8 {
     }
 
     #[inline(always)]
-    #[cfg(all(feature = "libc"))]
+    #[cfg(feature = "libc")]
     fn find_sentinel(slice: &[u8]) -> Option<usize> {
         let ret =
             unsafe { libc::memchr(slice.as_ptr() as _, b'\0' as _, slice.len()) as *const u8 };
@@ -146,7 +146,7 @@ unsafe impl Sentinel for i8 {
     }
 
     #[inline(always)]
-    #[cfg(all(feature = "libc"))]
+    #[cfg(feature = "libc")]
     fn find_sentinel(slice: &[i8]) -> Option<usize> {
         let ret =
             unsafe { libc::memchr(slice.as_ptr() as _, b'\0' as _, slice.len()) as *const i8 };
