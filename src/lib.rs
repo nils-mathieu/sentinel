@@ -520,6 +520,12 @@ impl CStr {
         unsafe { core::ffi::CStr::from_ptr(self.as_ptr() as *const core::ffi::c_char) }
     }
 
+    /// Casts a slice of `CStr` values into a slice of `*const c_char`s.
+    #[inline(always)]
+    pub const fn cast_to_slice_of_cstrs<'a>(slice: &'a [&Self]) -> &'a [*const core::ffi::c_char] {
+        unsafe { &*(slice as *const [&Self] as *const [*const core::ffi::c_char]) }
+    }
+
     /// An implementation of [`fmt::Display`] and [`fmt::Debug`] for the [`CStr`] type.
     ///
     /// When an invalid character is found, the [`REPLACEMENT_CHARACTER`] is displayed instead.
