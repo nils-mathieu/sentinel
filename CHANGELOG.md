@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project **does not** adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 (yet). Before `1.0`, breaking change may occur every minor version.
 
-## [0.5.0] - Unreleased
+## [0.5.2] - 05/10/2023
+
+### Added
+
+- Made more functions `const` when possible.
+
+- Added functions to convert from/to slices of sentinel terminated slices.
 
 ### Breaking Changes
 
