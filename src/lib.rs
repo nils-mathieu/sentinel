@@ -486,6 +486,23 @@ impl<T: Sentinel> SSlice<T> {
         let len = self.len().wrapping_add(1);
         unsafe { core::slice::from_raw_parts_mut(self.as_mut_ptr(), len) }
     }
+
+    /// Casts a slice of `SSlice<T>` values into a slice of `*const T`s.
+    #[inline(always)]
+    pub const fn cast_to_slice_of_ptrs<'a>(slice: &'a [&Self]) -> &'a [*const T] {
+        unsafe { &*(slice as *const [&Self] as *const [*const T]) }
+    }
+
+    /// Casts a slice of `*const T`s into a slice of `SSlice<T>` values.
+    ///
+    /// # Safety
+    ///
+    /// It must be safe to call `SSlice::from_ptr` for every pointer in the slice (for the lifetime
+    /// `'a`).
+    #[inline(always)]
+    pub const unsafe fn cast_to_slice_of_sslices<'a>(slice: &[*const T]) -> &[&'a Self] {
+        unsafe { &*(slice as *const [*const T] as *const [&Self]) }
+    }
 }
 
 impl CStr {
