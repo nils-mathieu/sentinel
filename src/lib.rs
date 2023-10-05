@@ -209,7 +209,7 @@ impl<T: Sentinel> SSlice<T> {
     /// however, that this value cannot be modified (even if it supports interior mutability). Or,
     /// rather, if it is a sentinel, it must remain a sentinel.
     #[inline(always)]
-    pub fn as_ptr(&self) -> *const T {
+    pub const fn as_ptr(&self) -> *const T {
         self as *const Self as *const T
     }
 
@@ -433,7 +433,7 @@ impl<T: Sentinel> SSlice<T> {
     /// If the returned value is a sentinel, it must not be modified (or rather, it must remain
     /// a sentinel).
     #[inline(always)]
-    pub unsafe fn raw_first(&self) -> &T {
+    pub const unsafe fn raw_first(&self) -> &T {
         // SAFETY:
         //  The first element of an `SSlice<T>` is always exists.
         unsafe { &*self.as_ptr() }
@@ -508,7 +508,7 @@ impl<T: Sentinel> SSlice<T> {
 impl CStr {
     /// Creates a new [`SSlice<T>`] from the provided standard [`core::ffi::CStr`].
     #[inline]
-    pub fn from_std_cstr(cstr: &core::ffi::CStr) -> &Self {
+    pub const fn from_std_cstr(cstr: &core::ffi::CStr) -> &Self {
         // Safety:
         //  We know by invariant that the standard CStr is null-terminated.
         unsafe { Self::from_ptr(cstr.as_ptr() as *const u8) }
@@ -526,7 +526,7 @@ impl CStr {
     ///
     /// [`REPLACEMENT_CHARACTER`]: core::char::REPLACEMENT_CHARACTER
     #[inline(always)]
-    pub fn display(&self) -> &Display {
+    pub const fn display(&self) -> &Display {
         unsafe { &*(self as *const Self as *const Display) }
     }
 }
