@@ -47,3 +47,103 @@ impl<T: Sentinel, const N: usize> DerefMut for InlineSSlice<T, N> {
         unsafe { SSlice::from_mut_ptr(self.0.as_mut_ptr()) }
     }
 }
+
+impl<T, U, const N: usize, const M: usize> PartialEq<InlineSSlice<U, M>> for InlineSSlice<T, N>
+where
+    T: PartialEq<U>,
+    T: Sentinel,
+    U: Sentinel,
+{
+    #[inline(always)]
+    fn eq(&self, other: &InlineSSlice<U, M>) -> bool {
+        **self == **other
+    }
+}
+
+impl<T, U, const N: usize> PartialEq<SSlice<U>> for InlineSSlice<T, N>
+where
+    T: PartialEq<U>,
+    T: Sentinel,
+    U: Sentinel,
+{
+    #[inline(always)]
+    fn eq(&self, other: &SSlice<U>) -> bool {
+        **self == *other
+    }
+}
+
+impl<T, U, const N: usize> PartialEq<[U]> for InlineSSlice<T, N>
+where
+    T: PartialEq<U>,
+    T: Sentinel,
+    U: Sentinel,
+{
+    #[inline(always)]
+    fn eq(&self, other: &[U]) -> bool {
+        **self == *other
+    }
+}
+
+impl<T, U, const N: usize> PartialEq<InlineSSlice<U, N>> for [T]
+where
+    T: PartialEq<U>,
+    T: Sentinel,
+    U: Sentinel,
+{
+    #[inline(always)]
+    fn eq(&self, other: &InlineSSlice<U, N>) -> bool {
+        *self == **other
+    }
+}
+
+impl<T, U, const N: usize> PartialEq<InlineSSlice<U, N>> for SSlice<T>
+where
+    T: PartialEq<U>,
+    T: Sentinel,
+    U: Sentinel,
+{
+    #[inline(always)]
+    fn eq(&self, other: &InlineSSlice<U, N>) -> bool {
+        *self == **other
+    }
+}
+
+impl<T, const N: usize> AsRef<[T]> for InlineSSlice<T, N>
+where
+    T: Sentinel,
+{
+    #[inline(always)]
+    fn as_ref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T, const N: usize> AsMut<[T]> for InlineSSlice<T, N>
+where
+    T: Sentinel,
+{
+    #[inline(always)]
+    fn as_mut(&mut self) -> &mut [T] {
+        self.as_slice_mut()
+    }
+}
+
+impl<T, const N: usize> AsRef<SSlice<T>> for InlineSSlice<T, N>
+where
+    T: Sentinel,
+{
+    #[inline(always)]
+    fn as_ref(&self) -> &SSlice<T> {
+        self
+    }
+}
+
+impl<T, const N: usize> AsMut<SSlice<T>> for InlineSSlice<T, N>
+where
+    T: Sentinel,
+{
+    #[inline(always)]
+    fn as_mut(&mut self) -> &mut SSlice<T> {
+        self
+    }
+}
