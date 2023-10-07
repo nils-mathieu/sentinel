@@ -30,6 +30,9 @@ pub use self::sbox::*;
 
 mod index;
 
+mod inline;
+pub use self::inline::*;
+
 /// A type that wraps a "C-like" string.
 ///
 /// When you hold a reference to a `CStr`, you are guarenteed that it is null-terminated. This type
