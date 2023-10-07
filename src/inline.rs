@@ -2,6 +2,9 @@ use core::ops::{Deref, DerefMut};
 
 use crate::{SSlice, Sentinel};
 
+/// A sentinel-terminated string that's backed by a fixed-size array.
+pub type InlineCStr<const N: usize> = InlineSSlice<u8, N>;
+
 /// A sentinel-terminated slice that's backed by a fixed-size array.
 #[derive(Debug, Clone, Copy)]
 pub struct InlineSSlice<T: Sentinel, const N: usize>([T; N]);
